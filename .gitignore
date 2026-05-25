@@ -6,3 +6,4 @@ drizzle/
 *.db
 *.db-shm
 *.db-wal
+.mcp.json
