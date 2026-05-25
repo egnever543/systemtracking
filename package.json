@@ -1,0 +1,30 @@
+{
+  "name": "wacapi",
+  "version": "1.0.0",
+  "description": "WA CAPI Tracker — rastreamento de cliques WhatsApp e integração com Facebook Conversions API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.12.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.30.8",
+    "hono": "^4.2.7",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.21.1",
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

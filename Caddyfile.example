@@ -1,0 +1,16 @@
+seudominio.com {
+    reverse_proxy localhost:3000
+
+    # Logs de acesso
+    log {
+        output file /var/log/caddy/wacapi.log
+        format json
+    }
+
+    # Headers de segurança
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
