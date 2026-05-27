@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -50,6 +51,39 @@ auth.post('/login', async (c) => {
 auth.get('/logout', (c) => {
   deleteCookie(c, 'session', { path: '/' });
   return c.redirect('/login');
+});
+
+auth.get('/register', (c) => {
+  const html = readFileSync(join(viewsDir, 'register.html'), 'utf-8');
+  return c.html(html);
+});
+
+auth.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const { nome, email, senha, confirmar_senha } = body;
+
+  if (!nome || !email || !senha || !confirmar_senha) {
+    return c.redirect('/register?erro=Preencha+todos+os+campos');
+  }
+
+  if (senha !== confirmar_senha) {
+    return c.redirect('/register?erro=As+senhas+n%C3%A3o+coincidem');
+  }
+
+  if (senha.length < 8) {
+    return c.redirect('/register?erro=A+senha+deve+ter+no+m%C3%ADnimo+8+caracteres');
+  }
+
+  const existente = db.select({ id: users.id }).from(users).where(eq(users.email, email.trim().toLowerCase())).get();
+  if (existente) {
+    return c.redirect('/register?erro=Este+email+j%C3%A1+est%C3%A1+cadastrado');
+  }
+
+  const hash = bcrypt.hashSync(senha, 12);
+  const id = randomUUID();
+  db.insert(users).values({ id, email: email.trim().toLowerCase(), passwordHash: hash, name: nome.trim() }).run();
+
+  return c.redirect('/login?msg=Conta+criada+com+sucesso!+Fa%C3%A7a+o+login.');
 });
 
 export default auth;

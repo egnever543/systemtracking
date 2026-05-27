@@ -8,6 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        PUBLIC_BASE_URL: 'http://track.convertedigitais.com.br',
       },
       instances: 1,
       autorestart: true,
