@@ -1,0 +1,15 @@
+#!/bin/sh
+# Gera o .env a partir das variáveis de ambiente do painel da Hostinger
+cat > .env <<EOF
+SUPABASE_URL=${SUPABASE_URL}
+SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+SESSION_SECRET=${SESSION_SECRET}
+PORT=${PORT:-3000}
+NODE_ENV=${NODE_ENV:-production}
+PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+MP_ACCESS_TOKEN=${MP_ACCESS_TOKEN}
+PLAN_NAME=${PLAN_NAME}
+PLAN_PRICE=${PLAN_PRICE}
+EOF
+
+exec node src/index.js
