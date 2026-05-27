@@ -17,6 +17,8 @@ billing.get('/', async (c) => {
   const { data: raw } = await supabase.from('users').select('*').eq('id', user.userId).maybeSingle();
   const dbUser = mapUser(raw);
 
+  if (!dbUser) return c.redirect('/login');
+
   const now = new Date();
   const status = dbUser.subscriptionStatus || 'trialing';
   const trialEnd = dbUser.trialEndsAt ? new Date(dbUser.trialEndsAt) : null;
