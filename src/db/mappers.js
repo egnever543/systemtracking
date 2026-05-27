@@ -32,5 +32,6 @@ export const mapEvent = (e) => !e ? null : {
   ipHash: e.ip_hash,
   ipOriginal: e.ip_original,
   pageUrl: e.page_url,
+  clickParams: e.click_params ?? null,
   createdAt: e.created_at,
 };

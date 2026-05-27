@@ -11,6 +11,41 @@ tracker.use('/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'OPTIONS'] }
 
 const TRACKING_RE = /^WA-[A-Z2-9]{6}$/;
 
+tracker.get('/r/:siteId', async (c) => {
+  const { siteId } = c.req.param();
+
+  const { data: raw } = await supabase.from('sites').select('*').eq('id', siteId).maybeSingle();
+  const site = mapSite(raw);
+  if (!site) return c.redirect('https://wa.me/');
+
+  const query = c.req.query();
+  const clickParams = Object.fromEntries(Object.entries(query).filter(([, v]) => v));
+
+  const ipOriginal =
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+    c.req.header('x-real-ip') ||
+    c.req.header('cf-connecting-ip') ||
+    'desconhecido';
+  const ipHash = createHash('sha256').update(ipOriginal).digest('hex').slice(0, 16);
+
+  const trackingId = generateTrackingId();
+
+  await supabase.from('events').insert({
+    id: randomUUID(),
+    site_id: site.id,
+    tracking_id: trackingId,
+    fbclid: query.fbclid || null,
+    user_agent: c.req.header('user-agent') || null,
+    ip_hash: ipHash,
+    ip_original: ipOriginal,
+    page_url: c.req.header('referer') || null,
+    click_params: Object.keys(clickParams).length > 0 ? clickParams : null,
+  });
+
+  const msg = (site.defaultMessage || '') + ' [' + trackingId + ']';
+  return c.redirect('https://wa.me/' + site.whatsappNumber + '?text=' + encodeURIComponent(msg), 302);
+});
+
 tracker.get('/:siteId/config', async (c) => {
   const { siteId } = c.req.param();
   const { data: raw } = await supabase.from('sites').select('*').eq('id', siteId).maybeSingle();

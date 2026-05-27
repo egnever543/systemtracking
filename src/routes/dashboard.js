@@ -112,6 +112,7 @@ dash.get('/sites/:siteId', async (c) => {
     siteName: site.name,
     snippet,
     baseUrl,
+    redirectUrl: `${baseUrl}/r/${site.id}`,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);

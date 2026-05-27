@@ -44,10 +44,23 @@
       }
     </script>
 
-    <!-- Snippet de instalação -->
+    <!-- Link de Rastreamento -->
+    <div class="bg-white rounded-xl border border-wa/30 p-5 mb-5" x-data="{ copiado: false }">
+      <h2 class="font-semibold text-gray-900 mb-1">Link de Rastreamento</h2>
+      <p class="text-sm text-gray-500 mb-3">Use este link diretamente nos botões do WhatsApp. Funciona em todos os dispositivos, incluindo iPhone:</p>
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+        <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{redirectUrl}}</code>
+        <button @click="navigator.clipboard.writeText('{{redirectUrl}}').then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+          class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
+          <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Snippet de instalação (opcional - só para capturar UTM/fbclid automaticamente) -->
     <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="{ copiado: false }">
-      <h2 class="font-semibold text-gray-900 mb-1">Snippet de Instalação</h2>
-      <p class="text-sm text-gray-500 mb-3">Cole este código antes do <code class="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code> do seu site:</p>
+      <h2 class="font-semibold text-gray-900 mb-1">Snippet de Instalação <span class="text-xs font-normal text-gray-400">(opcional)</span></h2>
+      <p class="text-sm text-gray-500 mb-3">Instale apenas se quiser capturar parâmetros de anúncio (fbclid, gclid, utm_*) automaticamente:</p>
       <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
         <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{snippet}}</code>
         <button @click="navigator.clipboard.writeText(`<script src='{{baseUrl}}/tracker.js' data-site='{{siteId}}' async><\/script>`).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
@@ -127,7 +140,7 @@
                 <th class="text-left pb-2 font-medium">ID</th>
                 <th class="text-left pb-2 font-medium">Data/Hora</th>
                 <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
-                <th class="text-left pb-2 font-medium">fbclid</th>
+                <th class="text-left pb-2 font-medium">Origem</th>
                 <th class="text-left pb-2 font-medium">Status</th>
               </tr>
             </thead>
@@ -140,8 +153,10 @@
                   <td class="py-2 pr-4 text-gray-600 whitespace-nowrap" x-text="formatDate(ev.createdAt)"></td>
                   <td class="py-2 pr-4 text-gray-500 hidden md:table-cell max-w-[200px] truncate" x-text="ev.pageUrl || '—'" :title="ev.pageUrl"></td>
                   <td class="py-2 pr-4">
-                    <span x-show="ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Sim</span>
-                    <span x-show="!ev.fbclid" class="text-xs text-gray-400">Não</span>
+                    <span x-show="ev.clickParams && ev.clickParams.utm_source" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded" x-text="ev.clickParams && ev.clickParams.utm_source"></span>
+                    <span x-show="!ev.clickParams?.utm_source && ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Facebook</span>
+                    <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
+                    <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
                   </td>
                   <td class="py-2">
                     <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>

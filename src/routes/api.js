@@ -146,7 +146,7 @@ api.get('/sites/:siteId/events', async (c) => {
   if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
 
   const { data: rows } = await supabase.from('events')
-    .select('id, tracking_id, fbclid, page_url, created_at')
+    .select('id, tracking_id, fbclid, page_url, click_params, created_at')
     .eq('site_id', siteId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -159,6 +159,7 @@ api.get('/sites/:siteId/events', async (c) => {
     trackingId: e.tracking_id,
     fbclid: e.fbclid,
     pageUrl: e.page_url,
+    clickParams: e.click_params ?? null,
     createdAt: e.created_at,
     convertido: convSet.has(e.id),
   })));
