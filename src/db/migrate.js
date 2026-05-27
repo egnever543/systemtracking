@@ -9,7 +9,11 @@ const migrations = sqlite.transaction(() => {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (datetime('now')),
+      trial_ends_at TEXT,
+      subscription_status TEXT DEFAULT 'trialing',
+      subscription_expires_at TEXT,
+      mp_subscription_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS sites (
@@ -58,4 +62,16 @@ const migrations = sqlite.transaction(() => {
 });
 
 migrations();
+
+// Adiciona colunas de assinatura (ignora se já existirem)
+const subscriptionColumns = [
+  "ALTER TABLE users ADD COLUMN trial_ends_at TEXT",
+  "ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'trialing'",
+  "ALTER TABLE users ADD COLUMN subscription_expires_at TEXT",
+  "ALTER TABLE users ADD COLUMN mp_subscription_id TEXT",
+];
+for (const stmt of subscriptionColumns) {
+  try { sqlite.exec(stmt); } catch (_) {}
+}
+
 console.log('✅ Banco de dados migrado com sucesso!');

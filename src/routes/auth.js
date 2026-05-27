@@ -81,7 +81,15 @@ auth.post('/register', async (c) => {
 
   const hash = bcrypt.hashSync(senha, 12);
   const id = randomUUID();
-  db.insert(users).values({ id, email: email.trim().toLowerCase(), passwordHash: hash, name: nome.trim() }).run();
+  const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+  db.insert(users).values({
+    id,
+    email: email.trim().toLowerCase(),
+    passwordHash: hash,
+    name: nome.trim(),
+    trialEndsAt,
+    subscriptionStatus: 'trialing',
+  }).run();
 
   return c.redirect('/login?msg=Conta+criada+com+sucesso!+Fa%C3%A7a+o+login.');
 });

@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import apiRoutes from './routes/api.js';
 import trackerRoutes from './routes/tracker.js';
+import billingRoutes, { webhookHandler } from './routes/billing.js';
 
 const app = new Hono();
 
@@ -36,6 +37,13 @@ app.route('/dashboard', dashboardRoutes);
 // API interna (protegida)
 app.use('/api/*', requireAuth);
 app.route('/api', apiRoutes);
+
+// Webhook público do Mercado Pago (sem auth)
+app.post('/webhook/mp', webhookHandler);
+
+// Billing (protegido)
+app.use('/billing/*', requireAuth);
+app.route('/billing', billingRoutes);
 
 const port = parseInt(process.env.PORT || '3000');
 console.log(`🚀 WA CAPI Tracker rodando na porta ${port}`);

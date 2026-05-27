@@ -7,6 +7,10 @@ export const users = sqliteTable('users', {
   passwordHash: text('password_hash').notNull(),
   name: text('name').notNull(),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
+  trialEndsAt: text('trial_ends_at'),
+  subscriptionStatus: text('subscription_status').default('trialing'),
+  subscriptionExpiresAt: text('subscription_expires_at'),
+  mpSubscriptionId: text('mp_subscription_id'),
 });
 
 export const sites = sqliteTable('sites', {
