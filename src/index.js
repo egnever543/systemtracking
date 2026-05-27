@@ -23,6 +23,11 @@ app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOStri
 
 // Rastreamento público (chamado dos sites dos clientes)
 app.route('/t', trackerRoutes);
+app.get('/r/:siteId', (c) => {
+  const { siteId } = c.req.param();
+  const qs = new URLSearchParams(Object.entries(c.req.query())).toString();
+  return c.redirect('/t/r/' + siteId + (qs ? '?' + qs : ''), 302);
+});
 
 // Auth
 app.route('/', authRoutes);
