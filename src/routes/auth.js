@@ -2,9 +2,8 @@ import { Hono } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { db } from '../db/index.js';
-import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { supabase } from '../db/index.js';
+import { mapUser } from '../db/mappers.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -27,7 +26,8 @@ auth.post('/login', async (c) => {
     return c.redirect('/login?erro=Preencha+todos+os+campos');
   }
 
-  const [user] = await db.select().from(users).where(eq(users.email, email.trim()));
+  const { data: raw } = await supabase.from('users').select('*').eq('email', email.trim()).maybeSingle();
+  const user = mapUser(raw);
 
   if (!user || !bcrypt.compareSync(senha, user.passwordHash)) {
     return c.redirect('/login?erro=Email+ou+senha+incorretos');
@@ -74,21 +74,21 @@ auth.post('/register', async (c) => {
     return c.redirect('/register?erro=A+senha+deve+ter+no+m%C3%ADnimo+8+caracteres');
   }
 
-  const [existente] = await db.select({ id: users.id }).from(users).where(eq(users.email, email.trim().toLowerCase()));
+  const { data: existente } = await supabase.from('users').select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
   if (existente) {
     return c.redirect('/register?erro=Este+email+j%C3%A1+est%C3%A1+cadastrado');
   }
 
   const hash = bcrypt.hashSync(senha, 12);
-  const id = randomUUID();
   const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-  await db.insert(users).values({
-    id,
+
+  await supabase.from('users').insert({
+    id: randomUUID(),
     email: email.trim().toLowerCase(),
-    passwordHash: hash,
+    password_hash: hash,
     name: nome.trim(),
-    trialEndsAt,
-    subscriptionStatus: 'trialing',
+    trial_ends_at: trialEndsAt,
+    subscription_status: 'trialing',
   });
 
   return c.redirect('/login?msg=Conta+criada+com+sucesso!+Fa%C3%A7a+o+login.');

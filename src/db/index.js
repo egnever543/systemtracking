@@ -1,6 +1,6 @@
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from './schema.js';
+import { createClient } from '@supabase/supabase-js';
 
-export const client = postgres(process.env.DATABASE_URL);
-export const db = drizzle(client, { schema });
+export const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);

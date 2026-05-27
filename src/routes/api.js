@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
-import { db } from '../db/index.js';
-import { sites, events, conversions } from '../db/schema.js';
-import { eq, desc, and, gte, count, inArray } from 'drizzle-orm';
+import { supabase } from '../db/index.js';
+import { mapSite, mapEvent } from '../db/mappers.js';
 import { sendPurchaseEvent } from '../services/facebookCapi.js';
 import { randomUUID } from 'crypto';
 
@@ -11,28 +10,16 @@ api.get('/events/lookup/:trackingId', async (c) => {
   const { trackingId } = c.req.param();
   const id = trackingId.toUpperCase().trim();
 
-  const [event] = await db
-    .select({
-      id: events.id,
-      trackingId: events.trackingId,
-      siteId: events.siteId,
-      fbclid: events.fbclid,
-      pageUrl: events.pageUrl,
-      createdAt: events.createdAt,
-    })
-    .from(events)
-    .where(eq(events.trackingId, id));
+  const { data: raw } = await supabase.from('events')
+    .select('id, tracking_id, site_id, fbclid, page_url, created_at')
+    .eq('tracking_id', id)
+    .maybeSingle();
 
-  if (!event) {
-    return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
-  }
+  const event = mapEvent(raw);
+  if (!event) return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
 
-  const [conv] = await db
-    .select({ id: conversions.id })
-    .from(conversions)
-    .where(eq(conversions.eventId, event.id));
-
-  const [site] = await db.select({ name: sites.name }).from(sites).where(eq(sites.id, event.siteId));
+  const { data: conv } = await supabase.from('conversions').select('id').eq('event_id', event.id).maybeSingle();
+  const { data: site } = await supabase.from('sites').select('name').eq('id', event.siteId).maybeSingle();
 
   return c.json({
     ...event,
@@ -53,25 +40,19 @@ api.post('/conversions', async (c) => {
     return c.json({ erro: 'ID de rastreamento e valor são obrigatórios' }, 400);
   }
 
-  const [event] = await db
-    .select()
-    .from(events)
-    .where(eq(events.trackingId, trackingId.toUpperCase().trim()));
+  const { data: rawEvent } = await supabase.from('events')
+    .select('*')
+    .eq('tracking_id', trackingId.toUpperCase().trim())
+    .maybeSingle();
 
-  if (!event) {
-    return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
-  }
+  const event = mapEvent(rawEvent);
+  if (!event) return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
 
-  const [jaExiste] = await db
-    .select({ id: conversions.id })
-    .from(conversions)
-    .where(eq(conversions.eventId, event.id));
+  const { data: jaExiste } = await supabase.from('conversions').select('id').eq('event_id', event.id).maybeSingle();
+  if (jaExiste) return c.json({ erro: 'Este ID já foi convertido anteriormente' }, 409);
 
-  if (jaExiste) {
-    return c.json({ erro: 'Este ID já foi convertido anteriormente' }, 409);
-  }
-
-  const [site] = await db.select().from(sites).where(eq(sites.id, event.siteId));
+  const { data: rawSite } = await supabase.from('sites').select('*').eq('id', event.siteId).maybeSingle();
+  const site = mapSite(rawSite);
 
   if (!site?.fbPixelId || !site?.fbAccessToken) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
@@ -92,22 +73,19 @@ api.post('/conversions', async (c) => {
   });
 
   const convId = randomUUID();
-  await db.insert(conversions).values({
+  await supabase.from('conversions').insert({
     id: convId,
-    eventId: event.id,
-    siteId: event.siteId,
+    event_id: event.id,
+    site_id: event.siteId,
     value: parseFloat(value),
     currency: currency || 'BRL',
-    registeredBy: user.userId,
-    fbResponse: JSON.stringify(capiResult.response),
-    fbSentAt: new Date().toISOString(),
+    registered_by: user.userId,
+    fb_response: JSON.stringify(capiResult.response),
+    fb_sent_at: new Date().toISOString(),
   });
 
   if (!capiResult.success) {
-    return c.json(
-      { erro: capiResult.error, detalhe: capiResult.response, convId },
-      { status: 207 }
-    );
+    return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, { status: 207 });
   }
 
   return c.json({ sucesso: true, convId, fbResponse: capiResult.response });
@@ -123,34 +101,37 @@ api.get('/stats', async (c) => {
   const mes = new Date(hoje);
   mes.setDate(1);
 
-  const userSites = await db
-    .select({ id: sites.id })
-    .from(sites)
-    .where(eq(sites.userId, user.userId));
-
-  const siteIds = userSites.map((s) => s.id);
+  const { data: userSites } = await supabase.from('sites').select('id').eq('user_id', user.userId);
+  const siteIds = (userSites || []).map((s) => s.id);
 
   if (siteIds.length === 0) {
     return c.json({ cliquesHoje: 0, cliquesSemana: 0, cliquesMes: 0, totalConversoes: 0 });
   }
 
-  const [cliquesHoje] = await db.select({ n: count() }).from(events)
-    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, hoje.toISOString())));
+  const { count: cliquesHoje } = await supabase.from('events')
+    .select('*', { count: 'exact', head: true })
+    .in('site_id', siteIds)
+    .gte('created_at', hoje.toISOString());
 
-  const [cliquesSemana] = await db.select({ n: count() }).from(events)
-    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, semana.toISOString())));
+  const { count: cliquesSemana } = await supabase.from('events')
+    .select('*', { count: 'exact', head: true })
+    .in('site_id', siteIds)
+    .gte('created_at', semana.toISOString());
 
-  const [cliquesMes] = await db.select({ n: count() }).from(events)
-    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, mes.toISOString())));
+  const { count: cliquesMes } = await supabase.from('events')
+    .select('*', { count: 'exact', head: true })
+    .in('site_id', siteIds)
+    .gte('created_at', mes.toISOString());
 
-  const [totalConversoes] = await db.select({ n: count() }).from(conversions)
-    .where(inArray(conversions.siteId, siteIds));
+  const { count: totalConversoes } = await supabase.from('conversions')
+    .select('*', { count: 'exact', head: true })
+    .in('site_id', siteIds);
 
   return c.json({
-    cliquesHoje: Number(cliquesHoje?.n ?? 0),
-    cliquesSemana: Number(cliquesSemana?.n ?? 0),
-    cliquesMes: Number(cliquesMes?.n ?? 0),
-    totalConversoes: Number(totalConversoes?.n ?? 0),
+    cliquesHoje: cliquesHoje || 0,
+    cliquesSemana: cliquesSemana || 0,
+    cliquesMes: cliquesMes || 0,
+    totalConversoes: totalConversoes || 0,
   });
 });
 
@@ -159,29 +140,28 @@ api.get('/sites/:siteId/events', async (c) => {
   const { siteId } = c.req.param();
   const limit = parseInt(c.req.query('limit') || '50');
 
-  const [site] = await db.select().from(sites)
-    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)));
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
 
-  if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
 
-  const rows = await db
-    .select({
-      id: events.id,
-      trackingId: events.trackingId,
-      fbclid: events.fbclid,
-      pageUrl: events.pageUrl,
-      createdAt: events.createdAt,
-    })
-    .from(events)
-    .where(eq(events.siteId, siteId))
-    .orderBy(desc(events.createdAt))
+  const { data: rows } = await supabase.from('events')
+    .select('id, tracking_id, fbclid, page_url, created_at')
+    .eq('site_id', siteId)
+    .order('created_at', { ascending: false })
     .limit(limit);
 
-  const convRows = await db.select({ eventId: conversions.eventId }).from(conversions)
-    .where(eq(conversions.siteId, siteId));
-  const convSet = new Set(convRows.map((r) => r.eventId));
+  const { data: convRows } = await supabase.from('conversions').select('event_id').eq('site_id', siteId);
+  const convSet = new Set((convRows || []).map((r) => r.event_id));
 
-  return c.json(rows.map((e) => ({ ...e, convertido: convSet.has(e.id) })));
+  return c.json((rows || []).map((e) => ({
+    id: e.id,
+    trackingId: e.tracking_id,
+    fbclid: e.fbclid,
+    pageUrl: e.page_url,
+    createdAt: e.created_at,
+    convertido: convSet.has(e.id),
+  })));
 });
 
 export default api;

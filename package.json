@@ -13,15 +13,13 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
+    "@supabase/supabase-js": "^2.106.2",
     "bcryptjs": "^2.4.3",
     "dotenv": "^17.4.2",
-    "drizzle-orm": "^0.30.8",
     "hono": "^4.2.7",
-    "nanoid": "^5.0.7",
-    "postgres": "^3.4.9"
+    "nanoid": "^5.0.7"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.21.1",
     "nodemon": "^3.1.0"
   },
   "engines": {

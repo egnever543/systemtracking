@@ -1,19 +1,17 @@
-import { db } from '../db/index.js';
-import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { supabase } from '../db/index.js';
 
 export async function getSubscriptionBanner(userId) {
-  const [user] = await db.select({
-    subscriptionStatus: users.subscriptionStatus,
-    trialEndsAt: users.trialEndsAt,
-  }).from(users).where(eq(users.id, userId));
+  const { data: user } = await supabase.from('users')
+    .select('subscription_status, trial_ends_at')
+    .eq('id', userId)
+    .maybeSingle();
 
-  if (!user || user.subscriptionStatus === 'active') return '';
+  if (!user || user.subscription_status === 'active') return '';
 
   const now = new Date();
 
-  if (!user.subscriptionStatus || user.subscriptionStatus === 'trialing') {
-    const trialEnd = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  if (!user.subscription_status || user.subscription_status === 'trialing') {
+    const trialEnd = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
     if (!trialEnd) return '';
 
     const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
@@ -31,7 +29,7 @@ export async function getSubscriptionBanner(userId) {
     </div>`;
   }
 
-  if (user.subscriptionStatus === 'expired') {
+  if (user.subscription_status === 'expired') {
     return `<div class="bg-red-50 border-b border-red-200 px-4 py-2 text-center text-sm text-red-800">
       Sua assinatura expirou.
       <a href="/billing" class="font-semibold underline ml-1">Renove agora</a> para continuar usando.

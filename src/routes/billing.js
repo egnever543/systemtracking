@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
-import { db } from '../db/index.js';
-import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { supabase } from '../db/index.js';
+import { mapUser } from '../db/mappers.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +14,8 @@ const billing = new Hono();
 
 billing.get('/', async (c) => {
   const user = c.get('user');
-  const [dbUser] = await db.select().from(users).where(eq(users.id, user.userId));
+  const { data: raw } = await supabase.from('users').select('*').eq('id', user.userId).maybeSingle();
+  const dbUser = mapUser(raw);
 
   const now = new Date();
   const status = dbUser.subscriptionStatus || 'trialing';
@@ -45,7 +45,8 @@ billing.post('/subscribe', async (c) => {
     return c.redirect('/billing?erro=Pagamentos+n%C3%A3o+configurados+pelo+administrador');
   }
 
-  const [dbUser] = await db.select().from(users).where(eq(users.id, user.userId));
+  const { data: raw } = await supabase.from('users').select('*').eq('id', user.userId).maybeSingle();
+  const dbUser = mapUser(raw);
 
   try {
     const sub = await createSubscription({ email: dbUser.email, userId: dbUser.id });
@@ -55,7 +56,7 @@ billing.post('/subscribe', async (c) => {
       return c.redirect('/billing?erro=Erro+ao+criar+assinatura+no+Mercado+Pago');
     }
 
-    await db.update(users).set({ mpSubscriptionId: sub.id }).where(eq(users.id, user.userId));
+    await supabase.from('users').update({ mp_subscription_id: sub.id }).eq('id', user.userId);
 
     return c.redirect(sub.init_point);
   } catch (err) {
@@ -73,8 +74,8 @@ export async function webhookHandler(c) {
   try {
     if (type === 'subscription_preapproval' || type === 'preapproval') {
       const sub = await getSubscription(data.id);
-      const [dbUser] = await db.select().from(users)
-        .where(eq(users.mpSubscriptionId, data.id));
+      const { data: raw } = await supabase.from('users').select('*').eq('mp_subscription_id', data.id).maybeSingle();
+      const dbUser = mapUser(raw);
 
       if (!dbUser) return c.json({ ok: true });
 
@@ -83,14 +84,13 @@ export async function webhookHandler(c) {
           ? new Date(sub.next_payment_date)
           : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
 
-        await db.update(users).set({
-          subscriptionStatus: 'active',
-          subscriptionExpiresAt: nextPayment.toISOString(),
-        }).where(eq(users.id, dbUser.id));
+        await supabase.from('users').update({
+          subscription_status: 'active',
+          subscription_expires_at: nextPayment.toISOString(),
+        }).eq('id', dbUser.id);
 
       } else if (sub.status === 'cancelled' || sub.status === 'paused') {
-        await db.update(users).set({ subscriptionStatus: 'expired' })
-          .where(eq(users.id, dbUser.id));
+        await supabase.from('users').update({ subscription_status: 'expired' }).eq('id', dbUser.id);
       }
     }
   } catch (err) {
