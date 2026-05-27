@@ -27,7 +27,7 @@ auth.post('/login', async (c) => {
     return c.redirect('/login?erro=Preencha+todos+os+campos');
   }
 
-  const user = db.select().from(users).where(eq(users.email, email.trim())).get();
+  const [user] = await db.select().from(users).where(eq(users.email, email.trim()));
 
   if (!user || !bcrypt.compareSync(senha, user.passwordHash)) {
     return c.redirect('/login?erro=Email+ou+senha+incorretos');
@@ -40,7 +40,7 @@ auth.post('/login', async (c) => {
   setCookie(c, 'session', sessionData, {
     httpOnly: true,
     sameSite: 'Lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 dias
+    maxAge: 60 * 60 * 24 * 7,
     path: '/',
     secure: process.env.NODE_ENV === 'production',
   });
@@ -74,7 +74,7 @@ auth.post('/register', async (c) => {
     return c.redirect('/register?erro=A+senha+deve+ter+no+m%C3%ADnimo+8+caracteres');
   }
 
-  const existente = db.select({ id: users.id }).from(users).where(eq(users.email, email.trim().toLowerCase())).get();
+  const [existente] = await db.select({ id: users.id }).from(users).where(eq(users.email, email.trim().toLowerCase()));
   if (existente) {
     return c.redirect('/register?erro=Este+email+j%C3%A1+est%C3%A1+cadastrado');
   }
@@ -82,14 +82,14 @@ auth.post('/register', async (c) => {
   const hash = bcrypt.hashSync(senha, 12);
   const id = randomUUID();
   const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-  db.insert(users).values({
+  await db.insert(users).values({
     id,
     email: email.trim().toLowerCase(),
     passwordHash: hash,
     name: nome.trim(),
     trialEndsAt,
     subscriptionStatus: 'trialing',
-  }).run();
+  });
 
   return c.redirect('/login?msg=Conta+criada+com+sucesso!+Fa%C3%A7a+o+login.');
 });

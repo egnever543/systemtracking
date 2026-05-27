@@ -2,11 +2,11 @@ import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
-export function getSubscriptionBanner(userId) {
-  const user = db.select({
+export async function getSubscriptionBanner(userId) {
+  const [user] = await db.select({
     subscriptionStatus: users.subscriptionStatus,
     trialEndsAt: users.trialEndsAt,
-  }).from(users).where(eq(users.id, userId)).get();
+  }).from(users).where(eq(users.id, userId));
 
   if (!user || user.subscriptionStatus === 'active') return '';
 

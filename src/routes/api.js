@@ -1,18 +1,17 @@
 import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { sites, events, conversions } from '../db/schema.js';
-import { eq, desc, and, gte, count, sql } from 'drizzle-orm';
+import { eq, desc, and, gte, count, inArray } from 'drizzle-orm';
 import { sendPurchaseEvent } from '../services/facebookCapi.js';
 import { randomUUID } from 'crypto';
 
 const api = new Hono();
 
-// Busca evento pelo tracking_id (usado no formulário de conversão)
-api.get('/events/lookup/:trackingId', (c) => {
+api.get('/events/lookup/:trackingId', async (c) => {
   const { trackingId } = c.req.param();
   const id = trackingId.toUpperCase().trim();
 
-  const event = db
+  const [event] = await db
     .select({
       id: events.id,
       trackingId: events.trackingId,
@@ -22,21 +21,18 @@ api.get('/events/lookup/:trackingId', (c) => {
       createdAt: events.createdAt,
     })
     .from(events)
-    .where(eq(events.trackingId, id))
-    .get();
+    .where(eq(events.trackingId, id));
 
   if (!event) {
     return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
   }
 
-  // Verifica se já tem conversão
-  const conv = db
+  const [conv] = await db
     .select({ id: conversions.id })
     .from(conversions)
-    .where(eq(conversions.eventId, event.id))
-    .get();
+    .where(eq(conversions.eventId, event.id));
 
-  const site = db.select({ name: sites.name }).from(sites).where(eq(sites.id, event.siteId)).get();
+  const [site] = await db.select({ name: sites.name }).from(sites).where(eq(sites.id, event.siteId));
 
   return c.json({
     ...event,
@@ -45,7 +41,6 @@ api.get('/events/lookup/:trackingId', (c) => {
   });
 });
 
-// Registra conversão e envia para o Facebook CAPI
 api.post('/conversions', async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => null);
@@ -58,34 +53,30 @@ api.post('/conversions', async (c) => {
     return c.json({ erro: 'ID de rastreamento e valor são obrigatórios' }, 400);
   }
 
-  const event = db
+  const [event] = await db
     .select()
     .from(events)
-    .where(eq(events.trackingId, trackingId.toUpperCase().trim()))
-    .get();
+    .where(eq(events.trackingId, trackingId.toUpperCase().trim()));
 
   if (!event) {
     return c.json({ erro: 'ID de rastreamento não encontrado' }, 404);
   }
 
-  // Impede conversão duplicada
-  const jaExiste = db
+  const [jaExiste] = await db
     .select({ id: conversions.id })
     .from(conversions)
-    .where(eq(conversions.eventId, event.id))
-    .get();
+    .where(eq(conversions.eventId, event.id));
 
   if (jaExiste) {
     return c.json({ erro: 'Este ID já foi convertido anteriormente' }, 409);
   }
 
-  const site = db.select().from(sites).where(eq(sites.id, event.siteId)).get();
+  const [site] = await db.select().from(sites).where(eq(sites.id, event.siteId));
 
   if (!site?.fbPixelId || !site?.fbAccessToken) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
   }
 
-  // Envia para o Facebook CAPI
   const capiResult = await sendPurchaseEvent({
     pixelId: site.fbPixelId,
     accessToken: site.fbAccessToken,
@@ -101,7 +92,7 @@ api.post('/conversions', async (c) => {
   });
 
   const convId = randomUUID();
-  db.insert(conversions).values({
+  await db.insert(conversions).values({
     id: convId,
     eventId: event.id,
     siteId: event.siteId,
@@ -110,7 +101,7 @@ api.post('/conversions', async (c) => {
     registeredBy: user.userId,
     fbResponse: JSON.stringify(capiResult.response),
     fbSentAt: new Date().toISOString(),
-  }).run();
+  });
 
   if (!capiResult.success) {
     return c.json(
@@ -122,8 +113,7 @@ api.post('/conversions', async (c) => {
   return c.json({ sucesso: true, convId, fbResponse: capiResult.response });
 });
 
-// Métricas para o dashboard
-api.get('/stats', (c) => {
+api.get('/stats', async (c) => {
   const user = c.get('user');
 
   const hoje = new Date();
@@ -133,11 +123,10 @@ api.get('/stats', (c) => {
   const mes = new Date(hoje);
   mes.setDate(1);
 
-  const userSites = db
+  const userSites = await db
     .select({ id: sites.id })
     .from(sites)
-    .where(eq(sites.userId, user.userId))
-    .all();
+    .where(eq(sites.userId, user.userId));
 
   const siteIds = userSites.map((s) => s.id);
 
@@ -145,50 +134,37 @@ api.get('/stats', (c) => {
     return c.json({ cliquesHoje: 0, cliquesSemana: 0, cliquesMes: 0, totalConversoes: 0 });
   }
 
-  // SQLite não tem operador IN com array pelo drizzle direto — usa raw
-  const siteIdList = siteIds.map((id) => `'${id}'`).join(',');
+  const [cliquesHoje] = await db.select({ n: count() }).from(events)
+    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, hoje.toISOString())));
 
-  const cliquesHoje = db.get(sql`
-    SELECT COUNT(*) as n FROM events
-    WHERE site_id IN (${sql.raw(siteIdList)})
-    AND created_at >= ${hoje.toISOString()}
-  `);
-  const cliquesSemana = db.get(sql`
-    SELECT COUNT(*) as n FROM events
-    WHERE site_id IN (${sql.raw(siteIdList)})
-    AND created_at >= ${semana.toISOString()}
-  `);
-  const cliquesMes = db.get(sql`
-    SELECT COUNT(*) as n FROM events
-    WHERE site_id IN (${sql.raw(siteIdList)})
-    AND created_at >= ${mes.toISOString()}
-  `);
-  const totalConversoes = db.get(sql`
-    SELECT COUNT(*) as n FROM conversions
-    WHERE site_id IN (${sql.raw(siteIdList)})
-  `);
+  const [cliquesSemana] = await db.select({ n: count() }).from(events)
+    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, semana.toISOString())));
+
+  const [cliquesMes] = await db.select({ n: count() }).from(events)
+    .where(and(inArray(events.siteId, siteIds), gte(events.createdAt, mes.toISOString())));
+
+  const [totalConversoes] = await db.select({ n: count() }).from(conversions)
+    .where(inArray(conversions.siteId, siteIds));
 
   return c.json({
-    cliquesHoje: cliquesHoje?.n || 0,
-    cliquesSemana: cliquesSemana?.n || 0,
-    cliquesMes: cliquesMes?.n || 0,
-    totalConversoes: totalConversoes?.n || 0,
+    cliquesHoje: Number(cliquesHoje?.n ?? 0),
+    cliquesSemana: Number(cliquesSemana?.n ?? 0),
+    cliquesMes: Number(cliquesMes?.n ?? 0),
+    totalConversoes: Number(totalConversoes?.n ?? 0),
   });
 });
 
-// Eventos recentes de um site
-api.get('/sites/:siteId/events', (c) => {
+api.get('/sites/:siteId/events', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
   const limit = parseInt(c.req.query('limit') || '50');
 
-  const site = db.select().from(sites)
-    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)))
-    .get();
+  const [site] = await db.select().from(sites)
+    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)));
 
   if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
 
-  const rows = db
+  const rows = await db
     .select({
       id: events.id,
       trackingId: events.trackingId,
@@ -199,13 +175,11 @@ api.get('/sites/:siteId/events', (c) => {
     .from(events)
     .where(eq(events.siteId, siteId))
     .orderBy(desc(events.createdAt))
-    .limit(limit)
-    .all();
+    .limit(limit);
 
-  const convSet = new Set(
-    db.select({ eventId: conversions.eventId }).from(conversions)
-      .where(eq(conversions.siteId, siteId)).all().map((r) => r.eventId)
-  );
+  const convRows = await db.select({ eventId: conversions.eventId }).from(conversions)
+    .where(eq(conversions.siteId, siteId));
+  const convSet = new Set(convRows.map((r) => r.eventId));
 
   return c.json(rows.map((e) => ({ ...e, convertido: convSet.has(e.id) })));
 });

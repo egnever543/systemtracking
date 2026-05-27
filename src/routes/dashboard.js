@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { sites, events, conversions } from '../db/schema.js';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, count, gte } from 'drizzle-orm';
 import { getSubscriptionBanner } from '../utils/subscription.js';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
@@ -22,49 +22,49 @@ function render(file, vars = {}) {
 
 const dash = new Hono();
 
-// Dashboard principal
-dash.get('/', (c) => {
+dash.get('/', async (c) => {
   const user = c.get('user');
   const html = render('dashboard.html', {
     userName: user.name,
-    subscriptionBanner: getSubscriptionBanner(user.userId),
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
 
-// Lista de sites
-dash.get('/sites', (c) => {
+dash.get('/sites', async (c) => {
   const user = c.get('user');
-  const userSites = db.select().from(sites).where(eq(sites.userId, user.userId))
-    .orderBy(desc(sites.createdAt)).all();
+  const userSites = await db.select().from(sites).where(eq(sites.userId, user.userId))
+    .orderBy(desc(sites.createdAt));
 
-  const siteCards = userSites.map((s) => {
-    const cliques = db.get(sql`SELECT COUNT(*) as n FROM events WHERE site_id = ${s.id} AND created_at >= date('now','-30 days')`);
-    const convs = db.get(sql`SELECT COUNT(*) as n FROM conversions WHERE site_id = ${s.id}`);
-    return { ...s, cliques30d: cliques?.n || 0, totalConversoes: convs?.n || 0 };
-  });
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const siteCards = await Promise.all(userSites.map(async (s) => {
+    const [cliquesResult] = await db.select({ n: count() }).from(events)
+      .where(and(eq(events.siteId, s.id), gte(events.createdAt, thirtyDaysAgo)));
+    const [convsResult] = await db.select({ n: count() }).from(conversions)
+      .where(eq(conversions.siteId, s.id));
+    return { ...s, cliques30d: Number(cliquesResult?.n ?? 0), totalConversoes: Number(convsResult?.n ?? 0) };
+  }));
 
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
   const html = render('sites/list.html', {
     userName: user.name,
     sitesJSON: JSON.stringify(siteCards),
     baseUrl,
-    subscriptionBanner: getSubscriptionBanner(user.userId),
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
 
-// Formulário novo site
-dash.get('/sites/novo', (c) => {
+dash.get('/sites/novo', async (c) => {
   const user = c.get('user');
   const html = render('sites/new.html', {
     userName: user.name,
-    subscriptionBanner: getSubscriptionBanner(user.userId),
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
 
-// Salva novo site
 dash.post('/sites/novo', async (c) => {
   const user = c.get('user');
   const body = await c.req.parseBody();
@@ -76,7 +76,7 @@ dash.post('/sites/novo', async (c) => {
   }
 
   const id = randomUUID();
-  db.insert(sites).values({
+  await db.insert(sites).values({
     id,
     userId: user.userId,
     name,
@@ -86,19 +86,17 @@ dash.post('/sites/novo', async (c) => {
     fbPixelId: fb_pixel_id || null,
     fbAccessToken: fb_access_token || null,
     fbTestEventCode: fb_test_event_code || null,
-  }).run();
+  });
 
   return c.redirect(`/dashboard/sites/${id}`);
 });
 
-// Detalhes do site
-dash.get('/sites/:siteId', (c) => {
+dash.get('/sites/:siteId', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
 
-  const site = db.select().from(sites)
-    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)))
-    .get();
+  const [site] = await db.select().from(sites)
+    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)));
 
   if (!site) return c.redirect('/dashboard/sites');
 
@@ -112,18 +110,17 @@ dash.get('/sites/:siteId', (c) => {
     siteName: site.name,
     snippet,
     baseUrl,
-    subscriptionBanner: getSubscriptionBanner(user.userId),
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
 
-// Edita site
 dash.post('/sites/:siteId/editar', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
 
-  const site = db.select({ id: sites.id }).from(sites)
-    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId))).get();
+  const [site] = await db.select({ id: sites.id }).from(sites)
+    .where(and(eq(sites.id, siteId), eq(sites.userId, user.userId)));
 
   if (!site) return c.redirect('/dashboard/sites');
 
@@ -140,22 +137,21 @@ dash.post('/sites/:siteId/editar', async (c) => {
     updates.fbAccessToken = body.fb_access_token.trim();
   }
 
-  db.update(sites).set(updates).where(eq(sites.id, siteId)).run();
+  await db.update(sites).set(updates).where(eq(sites.id, siteId));
   return c.redirect(`/dashboard/sites/${siteId}?sucesso=1`);
 });
 
-// Página de registrar conversão
-dash.get('/conversoes/registrar', (c) => {
+dash.get('/conversoes/registrar', async (c) => {
   const user = c.get('user');
   const siteId = c.req.query('site') || '';
-  const userSites = db.select({ id: sites.id, name: sites.name })
-    .from(sites).where(eq(sites.userId, user.userId)).all();
+  const userSites = await db.select({ id: sites.id, name: sites.name })
+    .from(sites).where(eq(sites.userId, user.userId));
 
   const html = render('conversions/register.html', {
     userName: user.name,
     sitesJSON: JSON.stringify(userSites),
     preselectedSite: siteId,
-    subscriptionBanner: getSubscriptionBanner(user.userId),
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });

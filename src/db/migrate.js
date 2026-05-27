@@ -1,21 +1,23 @@
 import 'dotenv/config';
-import { sqlite } from './index.js';
+import { db, client } from './index.js';
+import { sql } from 'drizzle-orm';
 
-// Cria as tabelas diretamente via SQL (sem precisar de arquivos de migration gerados)
-const migrations = sqlite.transaction(() => {
-  sqlite.exec(`
+async function migrate() {
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT NOW()::text,
       trial_ends_at TEXT,
       subscription_status TEXT DEFAULT 'trialing',
       subscription_expires_at TEXT,
       mp_subscription_id TEXT
-    );
+    )
+  `);
 
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS sites (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
@@ -26,9 +28,11 @@ const migrations = sqlite.transaction(() => {
       fb_access_token TEXT,
       fb_test_event_code TEXT,
       default_message TEXT DEFAULT 'Olá, vim pelo anúncio e quero saber mais!',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
+      created_at TEXT DEFAULT NOW()::text
+    )
+  `);
 
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,
       site_id TEXT NOT NULL REFERENCES sites(id),
@@ -38,9 +42,11 @@ const migrations = sqlite.transaction(() => {
       ip_hash TEXT,
       ip_original TEXT,
       page_url TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
+      created_at TEXT DEFAULT NOW()::text
+    )
+  `);
 
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS conversions (
       id TEXT PRIMARY KEY,
       event_id TEXT NOT NULL REFERENCES events(id),
@@ -48,30 +54,20 @@ const migrations = sqlite.transaction(() => {
       value REAL NOT NULL,
       currency TEXT NOT NULL DEFAULT 'BRL',
       registered_by TEXT REFERENCES users(id),
-      registered_at TEXT DEFAULT (datetime('now')),
+      registered_at TEXT DEFAULT NOW()::text,
       fb_response TEXT,
       fb_sent_at TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_site_id ON events(site_id);
-    CREATE INDEX IF NOT EXISTS idx_events_tracking_id ON events(tracking_id);
-    CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
-    CREATE INDEX IF NOT EXISTS idx_conversions_site_id ON conversions(site_id);
-    CREATE INDEX IF NOT EXISTS idx_conversions_event_id ON conversions(event_id);
+    )
   `);
-});
 
-migrations();
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_events_site_id ON events(site_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_events_tracking_id ON events(tracking_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_conversions_site_id ON conversions(site_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_conversions_event_id ON conversions(event_id)`);
 
-// Adiciona colunas de assinatura (ignora se já existirem)
-const subscriptionColumns = [
-  "ALTER TABLE users ADD COLUMN trial_ends_at TEXT",
-  "ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'trialing'",
-  "ALTER TABLE users ADD COLUMN subscription_expires_at TEXT",
-  "ALTER TABLE users ADD COLUMN mp_subscription_id TEXT",
-];
-for (const stmt of subscriptionColumns) {
-  try { sqlite.exec(stmt); } catch (_) {}
+  console.log('✅ Banco de dados migrado com sucesso!');
+  await client.end();
 }
 
-console.log('✅ Banco de dados migrado com sucesso!');
+migrate().catch((e) => { console.error(e); process.exit(1); });

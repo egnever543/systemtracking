@@ -13,10 +13,9 @@ const viewsDir = join(__dirname, '../../views');
 
 const billing = new Hono();
 
-// GET /billing — página de status da assinatura (requer auth)
-billing.get('/', (c) => {
+billing.get('/', async (c) => {
   const user = c.get('user');
-  const dbUser = db.select().from(users).where(eq(users.id, user.userId)).get();
+  const [dbUser] = await db.select().from(users).where(eq(users.id, user.userId));
 
   const now = new Date();
   const status = dbUser.subscriptionStatus || 'trialing';
@@ -34,12 +33,11 @@ billing.get('/', (c) => {
     .replaceAll('{{subscriptionExpiresAt}}', subExpires)
     .replaceAll('{{planPrice}}', process.env.PLAN_PRICE || '97')
     .replaceAll('{{planName}}', process.env.PLAN_NAME || 'Plano Mensal')
-    .replaceAll('{{subscriptionBanner}}', getSubscriptionBanner(user.userId));
+    .replaceAll('{{subscriptionBanner}}', await getSubscriptionBanner(user.userId));
 
   return c.html(html);
 });
 
-// POST /billing/subscribe — cria assinatura no MP e redireciona (requer auth)
 billing.post('/subscribe', async (c) => {
   const user = c.get('user');
 
@@ -47,7 +45,7 @@ billing.post('/subscribe', async (c) => {
     return c.redirect('/billing?erro=Pagamentos+n%C3%A3o+configurados+pelo+administrador');
   }
 
-  const dbUser = db.select().from(users).where(eq(users.id, user.userId)).get();
+  const [dbUser] = await db.select().from(users).where(eq(users.id, user.userId));
 
   try {
     const sub = await createSubscription({ email: dbUser.email, userId: dbUser.id });
@@ -57,7 +55,7 @@ billing.post('/subscribe', async (c) => {
       return c.redirect('/billing?erro=Erro+ao+criar+assinatura+no+Mercado+Pago');
     }
 
-    db.update(users).set({ mpSubscriptionId: sub.id }).where(eq(users.id, user.userId)).run();
+    await db.update(users).set({ mpSubscriptionId: sub.id }).where(eq(users.id, user.userId));
 
     return c.redirect(sub.init_point);
   } catch (err) {
@@ -66,7 +64,6 @@ billing.post('/subscribe', async (c) => {
   }
 });
 
-// POST /webhook/mp — webhook público do Mercado Pago (sem auth)
 export async function webhookHandler(c) {
   const body = await c.req.json().catch(() => ({}));
   const { type, data } = body;
@@ -76,8 +73,8 @@ export async function webhookHandler(c) {
   try {
     if (type === 'subscription_preapproval' || type === 'preapproval') {
       const sub = await getSubscription(data.id);
-      const dbUser = db.select().from(users)
-        .where(eq(users.mpSubscriptionId, data.id)).get();
+      const [dbUser] = await db.select().from(users)
+        .where(eq(users.mpSubscriptionId, data.id));
 
       if (!dbUser) return c.json({ ok: true });
 
@@ -86,14 +83,14 @@ export async function webhookHandler(c) {
           ? new Date(sub.next_payment_date)
           : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
 
-        db.update(users).set({
+        await db.update(users).set({
           subscriptionStatus: 'active',
           subscriptionExpiresAt: nextPayment.toISOString(),
-        }).where(eq(users.id, dbUser.id)).run();
+        }).where(eq(users.id, dbUser.id));
 
       } else if (sub.status === 'cancelled' || sub.status === 'paused') {
-        db.update(users).set({ subscriptionStatus: 'expired' })
-          .where(eq(users.id, dbUser.id)).run();
+        await db.update(users).set({ subscriptionStatus: 'expired' })
+          .where(eq(users.id, dbUser.id));
       }
     }
   } catch (err) {
