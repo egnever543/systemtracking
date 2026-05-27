@@ -7,7 +7,18 @@ import { randomUUID, createHash } from 'crypto';
 
 const tracker = new Hono();
 
-tracker.use('/*', cors({ origin: '*', allowMethods: ['POST', 'OPTIONS'] }));
+tracker.use('/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'OPTIONS'] }));
+
+const TRACKING_RE = /^WA-[A-Z2-9]{6}$/;
+
+tracker.get('/:siteId/config', async (c) => {
+  const { siteId } = c.req.param();
+  const { data: raw } = await supabase.from('sites').select('*').eq('id', siteId).maybeSingle();
+  const site = mapSite(raw);
+  if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  return c.json({ phone: site.whatsappNumber, message: site.defaultMessage });
+});
 
 tracker.post('/:siteId', async (c) => {
   const { siteId } = c.req.param();
@@ -17,7 +28,7 @@ tracker.post('/:siteId', async (c) => {
   if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
 
   const body = await c.req.json().catch(() => ({}));
-  const { fbclid, page_url, user_agent } = body;
+  const { fbclid, page_url, user_agent, tracking_id: clientTrackingId } = body;
 
   const ipOriginal =
     c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -28,13 +39,17 @@ tracker.post('/:siteId', async (c) => {
   const ipHash = createHash('sha256').update(ipOriginal).digest('hex').slice(0, 16);
 
   let trackingId;
-  let tentativas = 0;
-  do {
-    trackingId = generateTrackingId();
-    const { data: existe } = await supabase.from('events').select('id').eq('tracking_id', trackingId).maybeSingle();
-    if (!existe) break;
-    tentativas++;
-  } while (tentativas < 5);
+  if (clientTrackingId && TRACKING_RE.test(clientTrackingId)) {
+    trackingId = clientTrackingId;
+  } else {
+    let tentativas = 0;
+    do {
+      trackingId = generateTrackingId();
+      const { data: existe } = await supabase.from('events').select('id').eq('tracking_id', trackingId).maybeSingle();
+      if (!existe) break;
+      tentativas++;
+    } while (tentativas < 5);
+  }
 
   await supabase.from('events').insert({
     id: randomUUID(),

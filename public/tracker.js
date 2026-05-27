@@ -11,6 +11,19 @@
 
   if (!SITE_ID) return;
 
+  var siteConfig = null;
+  var CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  function genTrackingId() {
+    var result = 'WA-';
+    var buf = new Uint8Array(6);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < 6; i++) {
+      result += CHARS[buf[i] % CHARS.length];
+    }
+    return result;
+  }
+
   function getFbclid() {
     try {
       var params = new URLSearchParams(window.location.search);
@@ -29,42 +42,69 @@
     );
   }
 
+  // Prefetch site config so it's ready before the user clicks
+  function loadConfig() {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', BASE_URL + '/t/' + SITE_ID + '/config', true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4 || xhr.status !== 200) return;
+        try { siteConfig = JSON.parse(xhr.responseText); } catch (e) {}
+      };
+      xhr.send();
+    } catch (e) {}
+  }
+
+  function sendTracking(trackingId) {
+    var payload = JSON.stringify({
+      tracking_id: trackingId,
+      fbclid: getFbclid(),
+      page_url: window.location.href,
+      user_agent: navigator.userAgent
+    });
+
+    // sendBeacon is fire-and-forget and survives page navigation
+    if (navigator.sendBeacon) {
+      try {
+        navigator.sendBeacon(
+          BASE_URL + '/t/' + SITE_ID,
+          new Blob([payload], { type: 'application/json' })
+        );
+        return;
+      } catch (e) {}
+    }
+
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', BASE_URL + '/t/' + SITE_ID, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(payload);
+    } catch (e) {}
+  }
+
   function handleClick(event, anchor) {
     var href = anchor.getAttribute('href') || '';
     if (!isWhatsAppLink(href)) return;
 
     event.preventDefault();
 
-    var payload = JSON.stringify({
-      fbclid: getFbclid(),
-      page_url: window.location.href,
-      user_agent: navigator.userAgent
-    });
+    var trackingId = genTrackingId();
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', BASE_URL + '/t/' + SITE_ID, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-      var finalUrl;
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          var phone = data.phone || '';
-          var msg = (data.message || '') + ' [' + (data.tracking_id || '') + ']';
-          finalUrl = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
-        } catch (e) {
-          finalUrl = href;
-        }
-      } else {
-        finalUrl = href;
-      }
-      window.open(finalUrl, '_blank', 'noopener');
-    };
-    xhr.onerror = function () {
-      window.open(href, '_blank', 'noopener');
-    };
-    xhr.send(payload);
+    // Build the final URL synchronously — must happen before any async call
+    // so window.open() is called within the user gesture context (iOS Safari)
+    var finalUrl;
+    if (siteConfig && siteConfig.phone) {
+      var msg = (siteConfig.message || '') + ' [' + trackingId + ']';
+      finalUrl = 'https://wa.me/' + siteConfig.phone + '?text=' + encodeURIComponent(msg);
+    } else {
+      finalUrl = href;
+    }
+
+    // Open WhatsApp immediately — still in the synchronous click handler
+    window.open(finalUrl, '_blank', 'noopener');
+
+    // Register the event in the background (fire and forget)
+    sendTracking(trackingId);
   }
 
   function attachToLink(anchor) {
@@ -84,14 +124,14 @@
     }
   }
 
-  // Scan inicial
+  loadConfig();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scanLinks);
   } else {
     scanLinks();
   }
 
-  // MutationObserver para SPAs e conteúdo dinâmico
   if (window.MutationObserver) {
     var observer = new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i++) {
