@@ -1,30 +1,21 @@
 (function () {
-  'use strict';
+  var myScript = document.querySelector('script[data-site]');
+  if (!myScript) return;
 
-  var script = document.currentScript || (function () {
-    var scripts = document.getElementsByTagName('script');
-    return scripts[scripts.length - 1];
-  })();
-
-  var SITE_ID = script && script.getAttribute('data-site');
-
+  var SITE_ID = myScript.getAttribute('data-site');
   if (!SITE_ID) return;
 
-  var pageParams = new URLSearchParams(window.location.search);
-  if (!pageParams.toString()) return;
+  var search = window.location.search;
+  if (!search || search === '?') return;
 
-  var selector = 'a[href*="/r/' + SITE_ID + '"]';
+  var params = search.charAt(0) === '?' ? search.slice(1) : search;
+  if (!params) return;
 
   function updateLinks() {
-    var anchors = document.querySelectorAll(selector);
-    for (var i = 0; i < anchors.length; i++) {
-      try {
-        var url = new URL(anchors[i].href);
-        pageParams.forEach(function (v, k) {
-          url.searchParams.set(k, v);
-        });
-        anchors[i].href = url.toString();
-      } catch (e) {}
+    var links = document.querySelectorAll('a[href*="/r/' + SITE_ID + '"]');
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].href;
+      links[i].href = href + (href.indexOf('?') === -1 ? '?' : '&') + params;
     }
   }
 
@@ -32,10 +23,5 @@
     document.addEventListener('DOMContentLoaded', updateLinks);
   } else {
     updateLinks();
-  }
-
-  if (window.MutationObserver) {
-    var observer = new MutationObserver(updateLinks);
-    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
   }
 })();
