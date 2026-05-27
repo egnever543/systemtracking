@@ -19,11 +19,12 @@
     <div class="flex items-center gap-4">
       <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">Início</a>
       <a href="/dashboard/sites" class="text-sm text-gray-600 hover:text-gray-900">Sites</a>
+      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">Assinatura</a>
       <a href="/dashboard/conversoes/registrar" class="bg-wa text-white text-sm font-medium px-3 py-1.5 rounded-lg">+ Registrar Venda</a>
       <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
     </div>
   </nav>
-
+  {{subscriptionBanner}}
   <main class="max-w-lg mx-auto px-4 py-6"
     x-data="registrar()"
     x-init="init()">
@@ -61,12 +62,10 @@
           />
           <p class="text-xs text-gray-400 mt-1.5">Digite o ID que o cliente enviou na mensagem do WhatsApp</p>
 
-          <!-- Erro de busca -->
           <template x-if="erroId">
             <p class="mt-2 text-sm text-red-600" x-text="erroId"></p>
           </template>
 
-          <!-- Card de confirmação do evento encontrado -->
           <template x-if="buscando">
             <div class="mt-3 text-sm text-gray-400">Buscando...</div>
           </template>
@@ -144,9 +143,7 @@
         enviando: false,
         resultado: null,
 
-        init() {
-          // Nada a fazer no init
-        },
+        init() {},
 
         async buscarEvento() {
           const id = this.trackingId.trim().toUpperCase();
@@ -190,7 +187,6 @@
             if (res.ok && data.sucesso) {
               this.resultado = { sucesso: true, mensagem: 'A conversão foi enviada com sucesso para o Facebook CAPI.' };
             } else if (res.status === 207) {
-              // Salvou mas CAPI retornou erro
               this.resultado = { sucesso: false, mensagem: `Conversão salva, mas erro na API do Facebook: ${data.erro}` };
             } else {
               this.resultado = { sucesso: false, mensagem: data.erro || 'Erro desconhecido ao registrar.' };

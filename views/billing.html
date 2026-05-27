@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assinatura — WA CAPI Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
+</head>
+<body class="min-h-screen bg-gray-50">
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-wa rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </div>
+      <span class="font-bold text-gray-900 text-sm">WA CAPI</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">Início</a>
+      <a href="/dashboard/sites" class="text-sm text-gray-600 hover:text-gray-900">Sites</a>
+      <a href="/billing" class="text-sm font-medium text-gray-900">Assinatura</a>
+      <a href="/dashboard/conversoes/registrar" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">+ Registrar Venda</a>
+      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
+    </div>
+  </nav>
+  {{subscriptionBanner}}
+
+  <main class="max-w-lg mx-auto px-4 py-10">
+    <h1 class="text-xl font-bold text-gray-900 mb-2">Assinatura</h1>
+    <p class="text-gray-500 text-sm mb-6">Gerencie seu plano no WA CAPI Tracker.</p>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const erro = params.get('erro');
+      const msg = params.get('msg');
+      if (erro) document.write('<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">' + decodeURIComponent(erro) + '<\/div>');
+      if (msg)  document.write('<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">' + decodeURIComponent(msg) + '<\/div>');
+    </script>
+
+    <!-- Status: trial ativo -->
+    <div id="status-trialing" style="display:none" class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-2xl">⏳</span>
+        <div>
+          <p class="font-semibold text-amber-900">Período de teste</p>
+          <p class="text-sm text-amber-700">Seu trial termina em <strong id="days-left"></strong> dia(s).</p>
+        </div>
+      </div>
+      <p class="text-xs text-amber-600">Assine antes do fim do trial para continuar usando sem interrupções.</p>
+    </div>
+
+    <!-- Status: trial expirado -->
+    <div id="status-trial-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">❌</span>
+        <div>
+          <p class="font-semibold text-red-900">Trial expirado</p>
+          <p class="text-sm text-red-700">Seu período de teste acabou. Assine para continuar usando.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status: ativo -->
+    <div id="status-active" style="display:none" class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">✅</span>
+        <div>
+          <p class="font-semibold text-green-900">Assinatura ativa</p>
+          <p class="text-sm text-green-700" id="expires-at-label"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status: expirado -->
+    <div id="status-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">❌</span>
+        <div>
+          <p class="font-semibold text-red-900">Assinatura expirada</p>
+          <p class="text-sm text-red-700">Renove sua assinatura para continuar usando.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plano -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="font-semibold text-gray-900">{{planName}}</p>
+          <p class="text-sm text-gray-500">Cobrança mensal automática</p>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold text-gray-900">R$ {{planPrice}}</p>
+          <p class="text-xs text-gray-400">/mês</p>
+        </div>
+      </div>
+      <ul class="space-y-2 text-sm text-gray-600 mb-5">
+        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Rastreamento ilimitado de cliques</li>
+        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Envio automático para o Facebook CAPI</li>
+        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Sites ilimitados</li>
+        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Dashboard completo</li>
+      </ul>
+
+      <div id="subscribe-btn-wrapper">
+        <form method="POST" action="/billing/subscribe">
+          <button type="submit"
+            class="w-full bg-wa hover:bg-wa-dark text-white font-semibold py-3 rounded-xl transition-colors">
+            Assinar agora via Mercado Pago
+          </button>
+        </form>
+      </div>
+
+      <div id="active-msg" style="display:none" class="text-center text-sm text-gray-500 py-2">
+        Sua assinatura está ativa. Gerencie pelo Mercado Pago.
+      </div>
+    </div>
+
+    <p class="text-xs text-center text-gray-400">
+      Pagamento processado com segurança pelo Mercado Pago. Cancele quando quiser.
+    </p>
+  </main>
+
+  <script>
+    const STATUS = '{{subscriptionStatus}}';
+    const DAYS_LEFT = parseInt('{{daysLeftTrial}}') || 0;
+    const EXPIRES_AT = '{{subscriptionExpiresAt}}';
+
+    if (STATUS === 'active') {
+      document.getElementById('status-active').style.display = 'block';
+      document.getElementById('expires-at-label').textContent = EXPIRES_AT
+        ? 'Próxima cobrança: ' + EXPIRES_AT
+        : 'Assinatura ativa.';
+      document.getElementById('subscribe-btn-wrapper').style.display = 'none';
+      document.getElementById('active-msg').style.display = 'block';
+    } else if (STATUS === 'trialing') {
+      if (DAYS_LEFT > 0) {
+        document.getElementById('status-trialing').style.display = 'block';
+        document.getElementById('days-left').textContent = DAYS_LEFT;
+      } else {
+        document.getElementById('status-trial-expired').style.display = 'block';
+      }
+    } else if (STATUS === 'expired') {
+      document.getElementById('status-expired').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
