@@ -17,7 +17,8 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^17.4.2",
     "hono": "^4.2.7",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
