@@ -55,7 +55,20 @@
           <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
         </button>
       </div>
-      <p class="text-xs text-gray-400 mt-2">Para tráfego pago, adicione os parâmetros no link: <code class="bg-gray-100 px-1 rounded">?utm_source=facebook&amp;fbclid={{fbclid}}</code></p>
+      <p class="text-xs text-gray-400 mt-2">Para capturar parâmetros de anúncio automaticamente (fbclid, gclid, utm_* etc.), instale o snippet abaixo na página.</p>
+    </div>
+
+    <!-- Snippet -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="{ copiado: false }">
+      <h2 class="font-semibold text-gray-900 mb-1">Snippet <span class="text-xs font-normal text-gray-400">(opcional — para tráfego pago)</span></h2>
+      <p class="text-sm text-gray-500 mb-3">Cole antes do <code class="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code>. Copia automaticamente qualquer parâmetro da URL da página para o link de rastreamento:</p>
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+        <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{snippet}}</code>
+        <button @click="navigator.clipboard.writeText(`<script src='{{baseUrl}}/tracker.js' data-site='{{siteId}}' async><\/script>`).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+          class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
+          <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
+        </button>
+      </div>
     </div>
 
     <!-- Edição do site -->
