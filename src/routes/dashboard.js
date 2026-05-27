@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { sites, events, conversions } from '../db/schema.js';
 import { eq, desc, and, sql } from 'drizzle-orm';
+import { getSubscriptionBanner } from '../utils/subscription.js';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { readFileSync } from 'fs';
@@ -24,7 +25,10 @@ const dash = new Hono();
 // Dashboard principal
 dash.get('/', (c) => {
   const user = c.get('user');
-  const html = render('dashboard.html', { userName: user.name });
+  const html = render('dashboard.html', {
+    userName: user.name,
+    subscriptionBanner: getSubscriptionBanner(user.userId),
+  });
   return c.html(html);
 });
 
@@ -45,6 +49,7 @@ dash.get('/sites', (c) => {
     userName: user.name,
     sitesJSON: JSON.stringify(siteCards),
     baseUrl,
+    subscriptionBanner: getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
@@ -52,7 +57,10 @@ dash.get('/sites', (c) => {
 // Formulário novo site
 dash.get('/sites/novo', (c) => {
   const user = c.get('user');
-  const html = render('sites/new.html', { userName: user.name });
+  const html = render('sites/new.html', {
+    userName: user.name,
+    subscriptionBanner: getSubscriptionBanner(user.userId),
+  });
   return c.html(html);
 });
 
@@ -104,6 +112,7 @@ dash.get('/sites/:siteId', (c) => {
     siteName: site.name,
     snippet,
     baseUrl,
+    subscriptionBanner: getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });
@@ -147,6 +156,7 @@ dash.get('/conversoes/registrar', (c) => {
     userName: user.name,
     sitesJSON: JSON.stringify(userSites),
     preselectedSite: siteId,
+    subscriptionBanner: getSubscriptionBanner(user.userId),
   });
   return c.html(html);
 });

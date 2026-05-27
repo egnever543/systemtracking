@@ -19,11 +19,12 @@
     <div class="flex items-center gap-4">
       <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">Início</a>
       <a href="/dashboard/sites" class="text-sm font-medium text-gray-900">Sites</a>
+      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">Assinatura</a>
       <a href="/dashboard/conversoes/registrar" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">+ Registrar Venda</a>
       <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
     </div>
   </nav>
-
+  {{subscriptionBanner}}
   <main class="max-w-6xl mx-auto px-4 py-6" x-data="sitesPage()">
     <div class="flex items-center justify-between mb-6">
       <div>

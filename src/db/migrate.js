@@ -58,4 +58,16 @@ const migrations = sqlite.transaction(() => {
 });
 
 migrations();
+
+// Adiciona colunas de assinatura (ignora se já existirem)
+const subscriptionColumns = [
+  "ALTER TABLE users ADD COLUMN trial_ends_at TEXT",
+  "ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'trialing'",
+  "ALTER TABLE users ADD COLUMN subscription_expires_at TEXT",
+  "ALTER TABLE users ADD COLUMN mp_subscription_id TEXT",
+];
+for (const stmt of subscriptionColumns) {
+  try { sqlite.exec(stmt); } catch (_) {}
+}
+
 console.log('✅ Banco de dados migrado com sucesso!');
