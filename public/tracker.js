@@ -42,7 +42,6 @@
     );
   }
 
-  // Prefetch site config so it's ready before the user clicks
   function loadConfig() {
     try {
       var xhr = new XMLHttpRequest();
@@ -63,7 +62,6 @@
       user_agent: navigator.userAgent
     });
 
-    // sendBeacon is fire-and-forget and survives page navigation
     if (navigator.sendBeacon) {
       try {
         navigator.sendBeacon(
@@ -83,28 +81,27 @@
   }
 
   function handleClick(event, anchor) {
-    var href = anchor.getAttribute('href') || '';
-    if (!isWhatsAppLink(href)) return;
+    var original = anchor.getAttribute('data-wa-original') || anchor.getAttribute('href') || '';
+    if (!isWhatsAppLink(original)) return;
 
-    event.preventDefault();
+    if (!anchor.getAttribute('data-wa-original')) {
+      anchor.setAttribute('data-wa-original', original);
+    }
 
     var trackingId = genTrackingId();
 
-    // Build the final URL synchronously — must happen before any async call
-    // so window.open() is called within the user gesture context (iOS Safari)
-    var finalUrl;
     if (siteConfig && siteConfig.phone) {
       var msg = (siteConfig.message || '') + ' [' + trackingId + ']';
-      finalUrl = 'https://wa.me/' + siteConfig.phone + '?text=' + encodeURIComponent(msg);
-    } else {
-      finalUrl = href;
+      // Atualiza href antes do browser navegar — sem preventDefault, iOS segue o link normalmente
+      anchor.href = 'https://wa.me/' + siteConfig.phone + '?text=' + encodeURIComponent(msg);
     }
 
-    // Open WhatsApp immediately — still in the synchronous click handler
-    window.open(finalUrl, '_blank', 'noopener');
-
-    // Register the event in the background (fire and forget)
     sendTracking(trackingId);
+
+    // Restaura href original para cliques futuros
+    setTimeout(function () {
+      anchor.href = original;
+    }, 1000);
   }
 
   function attachToLink(anchor) {
