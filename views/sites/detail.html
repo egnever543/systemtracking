@@ -71,6 +71,66 @@
       </div>
     </div>
 
+    <!-- Distribuição de Números -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="numbersManager()">
+      <div class="mb-4">
+        <h2 class="font-semibold text-gray-900">Distribuição de Números WhatsApp</h2>
+        <p class="text-xs text-gray-400 mt-0.5">Distribua o tráfego entre múltiplos números. Se nenhum for cadastrado, usa o número padrão do site.</p>
+      </div>
+
+      <template x-if="numeros.length > 0">
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-100">
+                <th class="text-left pb-2 font-medium">Label</th>
+                <th class="text-left pb-2 font-medium">Número</th>
+                <th class="text-left pb-2 font-medium">Peso</th>
+                <th class="text-left pb-2 font-medium">% Real</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="n in numeros" :key="n.id">
+                <tr class="border-b border-gray-50">
+                  <td class="py-2 pr-4 text-gray-600" x-text="n.label || '—'"></td>
+                  <td class="py-2 pr-4"><code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="n.number"></code></td>
+                  <td class="py-2 pr-4 text-gray-600" x-text="n.weight"></td>
+                  <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="calcPercent(n.weight) + '%'"></span></td>
+                  <td class="py-2"><button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
+      <template x-if="numeros.length === 0">
+        <p class="text-sm text-gray-400 mb-4">Nenhum número configurado — usando o número padrão do site.</p>
+      </template>
+
+      <form @submit.prevent="adicionar" class="flex gap-2 flex-wrap items-end">
+        <div class="flex-1 min-w-[120px]">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
+          <input x-model="novo.label" type="text" placeholder="Ex: Vendedor A"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+        </div>
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Número <span class="text-red-400">*</span></label>
+          <input x-model="novo.number" type="text" placeholder="5511999990000" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+        </div>
+        <div class="w-24">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Peso</label>
+          <input x-model="novo.weight" type="number" min="1" placeholder="50"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+        </div>
+        <button type="submit" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          + Adicionar
+        </button>
+      </form>
+    </div>
+
     <!-- Edição do site -->
     <details class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
       <summary class="font-semibold text-gray-900 cursor-pointer select-none">Configurações do Site</summary>
@@ -142,6 +202,7 @@
                 <th class="text-left pb-2 font-medium">Data/Hora</th>
                 <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
                 <th class="text-left pb-2 font-medium">Origem</th>
+                <th class="text-left pb-2 font-medium hidden md:table-cell">Número</th>
                 <th class="text-left pb-2 font-medium">Status</th>
               </tr>
             </thead>
@@ -159,6 +220,10 @@
                     <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
                     <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
                   </td>
+                  <td class="py-2 pr-4 hidden md:table-cell">
+                    <span x-show="ev.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.selectedNumber"></span>
+                    <span x-show="!ev.selectedNumber" class="text-xs text-gray-400">—</span>
+                  </td>
                   <td class="py-2">
                     <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
                     <span x-show="!ev.convertido" class="text-xs text-gray-400">Aguardando</span>
@@ -175,6 +240,36 @@
   <script>
     const SITE_DATA = {{siteJSON}};
     const SITE_ID = '{{siteId}}';
+
+    function numbersManager() {
+      return {
+        numeros: [],
+        novo: { label: '', number: '', weight: 50 },
+        async init() {
+          const res = await fetch(`/api/sites/${SITE_ID}/numbers`);
+          if (res.ok) this.numeros = await res.json();
+        },
+        calcPercent(weight) {
+          const total = this.numeros.reduce((s, n) => s + n.weight, 0);
+          return total ? Math.round((weight / total) * 100) : 0;
+        },
+        async adicionar() {
+          const res = await fetch(`/api/sites/${SITE_ID}/numbers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.novo),
+          });
+          if (res.ok) {
+            this.numeros.push(await res.json());
+            this.novo = { label: '', number: '', weight: 50 };
+          }
+        },
+        async remover(id) {
+          const res = await fetch(`/api/sites/${SITE_ID}/numbers/${id}`, { method: 'DELETE' });
+          if (res.ok) this.numeros = this.numeros.filter(n => n.id !== id);
+        },
+      };
+    }
 
     function detailPage() {
       return {

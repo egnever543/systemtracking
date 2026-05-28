@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
-import { mapSite, mapEvent } from '../db/mappers.js';
+import { mapSite, mapEvent, mapSiteNumber } from '../db/mappers.js';
 import { sendPurchaseEvent } from '../services/facebookCapi.js';
 import { randomUUID } from 'crypto';
 
@@ -146,7 +146,7 @@ api.get('/sites/:siteId/events', async (c) => {
   if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
 
   const { data: rows } = await supabase.from('events')
-    .select('id, tracking_id, fbclid, page_url, click_params, created_at')
+    .select('id, tracking_id, fbclid, page_url, click_params, selected_number, created_at')
     .eq('site_id', siteId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -160,9 +160,59 @@ api.get('/sites/:siteId/events', async (c) => {
     fbclid: e.fbclid,
     pageUrl: e.page_url,
     clickParams: e.click_params ?? null,
+    selectedNumber: e.selected_number ?? null,
     createdAt: e.created_at,
     convertido: convSet.has(e.id),
   })));
+});
+
+api.get('/sites/:siteId/numbers', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const { data: rows } = await supabase.from('site_numbers')
+    .select('*').eq('site_id', siteId).order('created_at');
+
+  return c.json((rows || []).map(mapSiteNumber));
+});
+
+api.post('/sites/:siteId/numbers', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body?.number) return c.json({ erro: 'Número obrigatório' }, 400);
+
+  const { data, error } = await supabase.from('site_numbers').insert({
+    id: randomUUID(),
+    site_id: siteId,
+    number: String(body.number).replace(/\D/g, ''),
+    label: body.label || null,
+    weight: Math.max(1, parseInt(body.weight) || 50),
+  }).select().maybeSingle();
+
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json(mapSiteNumber(data));
+});
+
+api.delete('/sites/:siteId/numbers/:numberId', async (c) => {
+  const user = c.get('user');
+  const { siteId, numberId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  await supabase.from('site_numbers').delete().eq('id', numberId).eq('site_id', siteId);
+  return c.json({ ok: true });
 });
 
 export default api;

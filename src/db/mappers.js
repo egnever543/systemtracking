@@ -1,4 +1,13 @@
-export const mapUser = (u) => !u ? null : {
+export const mapSiteNumber = (n) => !n ? null : {
+  id: n.id,
+  siteId: n.site_id,
+  number: n.number,
+  label: n.label,
+  weight: n.weight,
+  createdAt: n.created_at,
+};
+
+
   id: u.id,
   email: u.email,
   name: u.name,
