@@ -7,7 +7,7 @@ export const mapSiteNumber = (n) => !n ? null : {
   createdAt: n.created_at,
 };
 
-
+export const mapUser = (u) => !u ? null : {
   id: u.id,
   email: u.email,
   name: u.name,
