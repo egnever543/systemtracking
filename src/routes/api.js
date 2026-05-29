@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
 import { mapSite, mapEvent, mapSiteNumber } from '../db/mappers.js';
 import { sendPurchaseEvent } from '../services/facebookCapi.js';
+import { sendGoogleConversion } from '../services/googleAdsCapi.js';
+import { sendTiktokConversion } from '../services/tiktokCapi.js';
+import { sendEmail, conversionEmailHtml } from '../services/email.js';
 import { randomUUID, createHash, randomBytes } from 'crypto';
 
 const api = new Hono();
@@ -58,6 +61,9 @@ api.post('/conversions', async (c) => {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
   }
 
+  const gclid = rawEvent?.click_params?.gclid || null;
+  const finalCurrency = currency || 'BRL';
+
   const capiResult = await sendPurchaseEvent({
     pixelId: site.fbPixelId,
     accessToken: site.fbAccessToken,
@@ -69,8 +75,33 @@ api.post('/conversions', async (c) => {
     ipOriginal: event.ipOriginal,
     userAgent: event.userAgent,
     value: parseFloat(value),
-    currency: currency || 'BRL',
+    currency: finalCurrency,
   });
+
+  // Google Ads + TikTok: fire-and-forget
+  Promise.all([
+    sendGoogleConversion({
+      customerId: site.googleCustomerId,
+      conversionActionId: site.googleConversionActionId,
+      developerToken: site.googleDeveloperToken,
+      refreshToken: site.googleRefreshToken,
+      gclid,
+      conversionDateTime: event.createdAt,
+      value: parseFloat(value),
+      currency: finalCurrency,
+    }),
+    sendTiktokConversion({
+      pixelId: site.tiktokPixelId,
+      accessToken: site.tiktokAccessToken,
+      trackingId: event.trackingId,
+      pageUrl: event.pageUrl,
+      value: parseFloat(value),
+      currency: finalCurrency,
+    }),
+  ]).then(([gRes, ttRes]) => {
+    if (!gRes.skipped && !gRes.success) console.error('[google-capi]', gRes.error);
+    if (!ttRes.skipped && !ttRes.success) console.error('[tiktok-capi]', ttRes.error);
+  }).catch(() => {});
 
   const convId = randomUUID();
   await supabase.from('conversions').insert({
@@ -78,11 +109,28 @@ api.post('/conversions', async (c) => {
     event_id: event.id,
     site_id: event.siteId,
     value: parseFloat(value),
-    currency: currency || 'BRL',
+    currency: finalCurrency,
     registered_by: user.userId,
     fb_response: JSON.stringify(capiResult.response),
     fb_sent_at: new Date().toISOString(),
   });
+
+  // Email de notificação para o dono do site (fire-and-forget)
+  supabase.from('users').select('email, name').eq('id', rawSite.user_id).maybeSingle()
+    .then(({ data: owner }) => {
+      if (owner) {
+        return sendEmail({
+          to: owner.email,
+          subject: `💰 Nova venda — ${event.trackingId}`,
+          html: conversionEmailHtml({
+            siteName: site.name,
+            trackingId: event.trackingId,
+            value: parseFloat(value),
+            currency: finalCurrency,
+          }),
+        });
+      }
+    }).catch(() => {});
 
   if (!capiResult.success) {
     return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, { status: 207 });
@@ -141,6 +189,7 @@ api.get('/stats', async (c) => {
     totalConversoes: totalConversoes || 0,
     totalCliques: total,
     taxaConversao,
+    totalSites: siteIds.length,
   });
 });
 

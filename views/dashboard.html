@@ -42,6 +42,40 @@
       <p class="text-gray-500 text-sm">Aqui está um resumo da sua atividade.</p>
     </div>
 
+    <!-- Onboarding (oculto quando concluído) -->
+    <template x-if="!onboarding.concluido">
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+        <h2 class="text-sm font-semibold text-gray-900 mb-1">Primeiros passos</h2>
+        <p class="text-xs text-gray-500 mb-4">Complete a configuração para começar a rastrear conversões.</p>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                 :class="onboarding.temSite ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+              <span x-show="onboarding.temSite">✓</span><span x-show="!onboarding.temSite">1</span>
+            </div>
+            <span class="text-sm flex-1" :class="onboarding.temSite ? 'text-gray-400 line-through' : 'text-gray-800'">Criar seu primeiro site</span>
+            <a x-show="!onboarding.temSite" href="/dashboard/sites/novo" class="text-xs text-wa font-medium shrink-0">Criar →</a>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                 :class="onboarding.temClique ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+              <span x-show="onboarding.temClique">✓</span><span x-show="!onboarding.temClique">2</span>
+            </div>
+            <span class="text-sm flex-1" :class="onboarding.temClique ? 'text-gray-400 line-through' : 'text-gray-800'">Instalar o snippet e receber o primeiro clique</span>
+            <a x-show="!onboarding.temClique && onboarding.temSite" href="/dashboard/sites" class="text-xs text-wa font-medium shrink-0">Ver sites →</a>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                 :class="onboarding.temConversao ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+              <span x-show="onboarding.temConversao">✓</span><span x-show="!onboarding.temConversao">3</span>
+            </div>
+            <span class="text-sm flex-1" :class="onboarding.temConversao ? 'text-gray-400 line-through' : 'text-gray-800'">Registrar a primeira venda</span>
+            <a x-show="!onboarding.temConversao && onboarding.temClique" href="/dashboard/conversoes/registrar" class="text-xs text-wa font-medium shrink-0">Registrar →</a>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- Cards de métricas -->
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
       <div class="bg-white rounded-xl border border-gray-100 p-4">
@@ -94,7 +128,13 @@
         async init() {
           const res = await fetch('/api/stats');
           if (res.ok) this.stats = await res.json();
-        }
+        },
+        get onboarding() {
+          const temSite = (this.stats.totalSites || 0) > 0;
+          const temClique = (this.stats.totalCliques || 0) > 0;
+          const temConversao = (this.stats.totalConversoes || 0) > 0;
+          return { temSite, temClique, temConversao, concluido: temSite && temClique && temConversao };
+        },
       };
     }
   </script>

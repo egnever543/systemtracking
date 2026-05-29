@@ -84,9 +84,15 @@ dash.post('/sites/novo', async (c) => {
     domain,
     whatsapp_number,
     default_message: default_message || 'Olá, vim pelo anúncio e quero saber mais!',
-    fb_pixel_id: fb_pixel_id || null,
-    fb_access_token: fb_access_token || null,
-    fb_test_event_code: fb_test_event_code || null,
+    fb_pixel_id: body.fb_pixel_id || null,
+    fb_access_token: body.fb_access_token || null,
+    fb_test_event_code: body.fb_test_event_code || null,
+    google_customer_id: body.google_customer_id || null,
+    google_conversion_action_id: body.google_conversion_action_id || null,
+    google_developer_token: body.google_developer_token || null,
+    google_refresh_token: body.google_refresh_token || null,
+    tiktok_pixel_id: body.tiktok_pixel_id || null,
+    tiktok_access_token: body.tiktok_access_token || null,
   });
 
   return c.redirect(`/dashboard/sites/${id}`);
@@ -135,10 +141,14 @@ dash.post('/sites/:siteId/editar', async (c) => {
     default_message: body.default_message,
     fb_pixel_id: body.fb_pixel_id || null,
     fb_test_event_code: body.fb_test_event_code || null,
+    google_customer_id: body.google_customer_id || null,
+    google_conversion_action_id: body.google_conversion_action_id || null,
+    tiktok_pixel_id: body.tiktok_pixel_id || null,
   };
-  if (body.fb_access_token?.trim()) {
-    updates.fb_access_token = body.fb_access_token.trim();
-  }
+  if (body.fb_access_token?.trim()) updates.fb_access_token = body.fb_access_token.trim();
+  if (body.google_developer_token?.trim()) updates.google_developer_token = body.google_developer_token.trim();
+  if (body.google_refresh_token?.trim()) updates.google_refresh_token = body.google_refresh_token.trim();
+  if (body.tiktok_access_token?.trim()) updates.tiktok_access_token = body.tiktok_access_token.trim();
 
   await supabase.from('sites').update(updates).eq('id', siteId);
   return c.redirect(`/dashboard/sites/${siteId}?sucesso=1`);

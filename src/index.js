@@ -3,12 +3,14 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
+import cron from 'node-cron';
 import { requireAuth, requireAuthApi } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import apiRoutes from './routes/api.js';
 import trackerRoutes from './routes/tracker.js';
 import billingRoutes, { webhookHandler } from './routes/billing.js';
+import { sendWeeklyReports } from './services/weeklyReport.js';
 
 const app = new Hono();
 
@@ -54,3 +56,6 @@ const port = parseInt(process.env.PORT || '3000');
 console.log(`🚀 WA CAPI Tracker rodando na porta ${port}`);
 
 serve({ fetch: app.fetch, port });
+
+// Relatório semanal — toda segunda-feira às 8h (horário de Brasília = 11h UTC)
+cron.schedule('0 11 * * 1', sendWeeklyReports);

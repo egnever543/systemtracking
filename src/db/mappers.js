@@ -29,6 +29,12 @@ export const mapSite = (s) => !s ? null : {
   fbAccessToken: s.fb_access_token,
   fbTestEventCode: s.fb_test_event_code,
   defaultMessage: s.default_message,
+  googleCustomerId: s.google_customer_id,
+  googleConversionActionId: s.google_conversion_action_id,
+  googleDeveloperToken: s.google_developer_token,
+  googleRefreshToken: s.google_refresh_token,
+  tiktokPixelId: s.tiktok_pixel_id,
+  tiktokAccessToken: s.tiktok_access_token,
   createdAt: s.created_at,
 };
 
