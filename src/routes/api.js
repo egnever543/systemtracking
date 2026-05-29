@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
 import { mapSite, mapEvent, mapSiteNumber } from '../db/mappers.js';
 import { sendPurchaseEvent } from '../services/facebookCapi.js';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash, randomBytes } from 'crypto';
 
 const api = new Hono();
 
@@ -303,6 +303,48 @@ api.get('/sites/:siteId/numbers-stats', async (c) => {
     ...s,
     taxa: s.cliques > 0 ? Math.round((s.conversoes / s.cliques) * 100) : 0,
   })).sort((a, b) => b.cliques - a.cliques));
+});
+
+api.get('/keys', async (c) => {
+  const user = c.get('user');
+  const { data: rows } = await supabase.from('api_keys')
+    .select('id, label, last_used_at, created_at')
+    .eq('user_id', user.userId)
+    .order('created_at', { ascending: false });
+  return c.json(rows || []);
+});
+
+api.post('/keys', async (c) => {
+  const user = c.get('user');
+  const body = await c.req.json().catch(() => null);
+  const label = body?.label?.trim() || 'Chave sem nome';
+
+  const rawKey = 'wact_' + randomBytes(20).toString('hex');
+  const keyHash = createHash('sha256').update(rawKey).digest('hex');
+  const id = randomUUID();
+
+  const { error } = await supabase.from('api_keys').insert({
+    id,
+    user_id: user.userId,
+    key_hash: keyHash,
+    label,
+  });
+
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ id, label, key: rawKey, createdAt: new Date().toISOString() }, 201);
+});
+
+api.delete('/keys/:keyId', async (c) => {
+  const user = c.get('user');
+  const { keyId } = c.req.param();
+
+  const { data: row } = await supabase.from('api_keys')
+    .select('id').eq('id', keyId).eq('user_id', user.userId).maybeSingle();
+
+  if (!row) return c.json({ erro: 'Chave não encontrada' }, 404);
+
+  await supabase.from('api_keys').delete().eq('id', keyId);
+  return c.json({ ok: true });
 });
 
 export default api;

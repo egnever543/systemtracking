@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, requireAuthApi } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import apiRoutes from './routes/api.js';
@@ -40,7 +40,7 @@ app.use('/dashboard/*', requireAuth);
 app.route('/dashboard', dashboardRoutes);
 
 // API interna (protegida)
-app.use('/api/*', requireAuth);
+app.use('/api/*', requireAuthApi);
 app.route('/api', apiRoutes);
 
 // Webhook público do Mercado Pago (sem auth)

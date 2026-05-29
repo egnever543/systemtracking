@@ -167,4 +167,12 @@ dash.get('/docs', async (c) => {
   return c.html(html);
 });
 
+dash.get('/settings', async (c) => {
+  const user = c.get('user');
+  const html = render('settings.html', {
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
+  });
+  return c.html(html);
+});
+
 export default dash;
