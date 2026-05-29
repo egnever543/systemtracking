@@ -428,6 +428,12 @@ api.post('/profile/logo', async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   const fileName = user.userId;
 
+  // Cria o bucket na primeira vez se não existir
+  const { error: bucketErr } = await supabase.storage.getBucket('logos');
+  if (bucketErr) {
+    await supabase.storage.createBucket('logos', { public: true });
+  }
+
   const { error: upErr } = await supabase.storage.from('logos').upload(fileName, buffer, {
     contentType: file.type,
     upsert: true,
