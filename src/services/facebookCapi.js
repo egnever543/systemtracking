@@ -33,7 +33,52 @@ function formatFbc(fbclid, createdAt) {
  * @param {string} params.currency
  * @returns {Promise<{success: boolean, response: object, error?: string}>}
  */
-export async function sendPurchaseEvent(params) {
+export async function sendLeadEvent(params) {
+  const {
+    pixelId,
+    accessToken,
+    testEventCode,
+    trackingId,
+    pageUrl,
+    fbclid,
+    eventCreatedAt,
+    ipOriginal,
+    userAgent,
+  } = params;
+
+  const userData = {};
+  if (ipOriginal) userData.client_ip_address = ipOriginal;
+  if (userAgent) userData.client_user_agent = userAgent;
+  if (fbclid) userData.fbc = formatFbc(fbclid, eventCreatedAt);
+
+  const payload = {
+    data: [
+      {
+        event_name: 'Lead',
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: `lead_${trackingId}`,
+        action_source: 'website',
+        event_source_url: pageUrl || undefined,
+        user_data: userData,
+      },
+    ],
+  };
+
+  if (testEventCode) payload.test_event_code = testEventCode;
+
+  const url = `${CAPI_BASE}/${CAPI_VERSION}/${pixelId}/events?access_token=${accessToken}`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { success: res.ok, response: await res.json() };
+  } catch (err) {
+    return { success: false, response: {}, error: err.message };
+  }
+}
   const {
     pixelId,
     accessToken,

@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { supabase } from '../db/index.js';
 import { mapSite, mapSiteNumber } from '../db/mappers.js';
-import { generateTrackingId } from '../services/idGenerator.js';
 import { randomUUID, createHash } from 'crypto';
+import { generateTrackingId } from '../services/idGenerator.js';
+import { sendLeadEvent } from '../services/facebookCapi.js';
 
 const tracker = new Hono();
 
@@ -61,6 +62,21 @@ tracker.get('/r/:siteId', async (c) => {
     click_params: Object.keys(clickParams).length > 0 ? clickParams : null,
     selected_number: selected.number,
   });
+
+  // Dispara Lead para Facebook CAPI em background se o site tiver Pixel configurado
+  if (site.fbPixelId && site.fbAccessToken) {
+    sendLeadEvent({
+      pixelId: site.fbPixelId,
+      accessToken: site.fbAccessToken,
+      testEventCode: site.fbTestEventCode || null,
+      trackingId,
+      pageUrl: c.req.header('referer') || null,
+      fbclid: query.fbclid || null,
+      eventCreatedAt: new Date().toISOString(),
+      ipOriginal,
+      userAgent: c.req.header('user-agent') || null,
+    }).catch(() => {});
+  }
 
   const msg = (site.defaultMessage || '') + ' [' + trackingId + ']';
   return c.redirect('https://wa.me/' + selected.number + '?text=' + encodeURIComponent(msg), 302);
