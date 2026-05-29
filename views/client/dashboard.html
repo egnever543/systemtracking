@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{siteName}} — Portal do Cliente</title>
+  <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
+  <link rel="stylesheet" href="/assets/theme.css">
+  <script src="/assets/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-wa rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </div>
+      <span class="font-semibold text-gray-900 text-sm">{{siteName}}</span>
+    </div>
+    <button onclick="toggleTheme()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded" title="Alternar tema">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+    </button>
+  </nav>
+
+  <main class="max-w-2xl mx-auto px-4 py-6" x-data="portalCliente()" x-init="init()">
+
+    <!-- Tabs -->
+    <div class="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+      <button @click="aba = 'registrar'"
+        :class="aba === 'registrar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
+        Registrar
+      </button>
+      <button @click="aba = 'desempenho'; carregarDesempenho()"
+        :class="aba === 'desempenho' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
+        Desempenho
+      </button>
+      <button @click="aba = 'historico'; carregarHistorico()"
+        :class="aba === 'historico' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
+        Histórico
+      </button>
+    </div>
+
+    <!-- ===== ABA: REGISTRAR ===== -->
+    <div x-show="aba === 'registrar'">
+
+      <template x-if="resultado">
+        <div :class="resultado.sucesso ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+             class="rounded-2xl border p-6 mb-4">
+          <p class="font-semibold text-base mb-1"
+             :class="resultado.sucesso ? 'text-green-800' : 'text-red-800'"
+             x-text="resultado.sucesso ? '✅ Evento registrado!' : '❌ Erro ao registrar'"></p>
+          <p class="text-sm" :class="resultado.sucesso ? 'text-green-700' : 'text-red-700'" x-text="resultado.mensagem"></p>
+          <button x-show="resultado.sucesso" @click="resetar()" class="mt-3 text-sm underline text-green-700">Registrar outro</button>
+        </div>
+      </template>
+
+      <template x-if="!resultado">
+        <div class="space-y-4">
+
+          <!-- Código -->
+          <div class="bg-white rounded-2xl border border-gray-100 p-5">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Código de Rastreamento</label>
+            <input
+              type="text"
+              x-model="trackingId"
+              @input="eventoEncontrado = null; erroId = null"
+              @blur="buscarEvento()"
+              @keydown.enter="buscarEvento()"
+              placeholder="WA-8F3K2P"
+              autocomplete="off"
+              class="w-full px-4 py-4 border border-gray-200 rounded-xl text-center text-2xl font-mono font-bold tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-wa focus:border-transparent transition-colors"
+              :class="erroId ? 'border-red-300 bg-red-50' : ''"
+            />
+
+            <template x-if="buscando">
+              <div class="mt-3 flex items-center gap-2 text-sm text-gray-400">
+                <div class="w-3.5 h-3.5 border-2 border-gray-200 border-t-wa rounded-full animate-spin shrink-0"></div>
+                Buscando...
+              </div>
+            </template>
+
+            <template x-if="erroId && !buscando">
+              <p class="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <span>⚠</span> <span x-text="erroId"></span>
+              </p>
+            </template>
+
+            <template x-if="eventoEncontrado && !buscando">
+              <div class="mt-4 rounded-xl p-4"
+                   :class="eventoEncontrado.jaConvertido ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'">
+                <p class="text-xs font-semibold mb-3"
+                   :class="eventoEncontrado.jaConvertido ? 'text-yellow-800' : 'text-green-800'"
+                   x-text="eventoEncontrado.jaConvertido ? '⚠️  Este ID já foi registrado antes' : '✅  Clique encontrado'"></p>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div>
+                    <p class="text-xs text-gray-400">Data do clique</p>
+                    <p class="text-xs font-semibold text-gray-800 mt-0.5" x-text="formatDate(eventoEncontrado.createdAt)"></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400">Origem</p>
+                    <p class="text-xs font-semibold mt-0.5" x-text="origemLabel(eventoEncontrado)"></p>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Configuração do evento -->
+          <template x-if="eventoEncontrado">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 space-y-5">
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tipo de Evento</label>
+                <div class="grid grid-cols-3 gap-2">
+
+                  <button @click="eventoSelecionado = 'Purchase'"
+                    :class="eventoSelecionado === 'Purchase' ? 'bg-wa text-white border-wa shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                    class="border rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 transition-all">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span class="text-xs font-medium">Venda</span>
+                  </button>
+
+                  <button @click="eventoSelecionado = 'Lead'"
+                    :class="eventoSelecionado === 'Lead' ? 'bg-wa text-white border-wa shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                    class="border rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 transition-all">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span class="text-xs font-medium">Lead</span>
+                  </button>
+
+                  <button @click="eventoSelecionado = 'InitiateCheckout'"
+                    :class="eventoSelecionado === 'InitiateCheckout' ? 'bg-wa text-white border-wa shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                    class="border rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 transition-all">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    <span class="text-xs font-medium">Checkout</span>
+                  </button>
+
+                  <button @click="eventoSelecionado = 'AddToCart'"
+                    :class="eventoSelecionado === 'AddToCart' ? 'bg-wa text-white border-wa shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                    class="border rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 transition-all">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    <span class="text-xs font-medium">Carrinho</span>
+                  </button>
+
+                  <button @click="eventoSelecionado = 'ViewContent'"
+                    :class="eventoSelecionado === 'ViewContent' ? 'bg-wa text-white border-wa shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                    class="border rounded-xl py-3 px-2 flex flex-col items-center gap-1.5 transition-all">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span class="text-xs font-medium">Visualização</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Valor (só para Purchase) -->
+              <template x-if="eventoAtual && eventoAtual.precisaValor">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Valor da Venda</label>
+                  <div class="flex gap-2">
+                    <select x-model="currency"
+                      class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-wa bg-white">
+                      <option value="BRL">R$ BRL</option>
+                      <option value="USD">$ USD</option>
+                      <option value="EUR">€ EUR</option>
+                    </select>
+                    <input
+                      type="number"
+                      x-model="value"
+                      placeholder="0,00"
+                      min="0.01"
+                      step="0.01"
+                      class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-wa"
+                    />
+                  </div>
+                </div>
+              </template>
+
+              <button
+                @click="registrar()"
+                :disabled="enviando || !trackingId || (eventoAtual && eventoAtual.precisaValor && !value)"
+                class="w-full bg-wa hover:bg-wa-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
+                <span x-show="!enviando">Registrar <span x-text="eventoAtual ? eventoAtual.label : ''"></span></span>
+                <span x-show="enviando">Enviando...</span>
+              </button>
+
+            </div>
+          </template>
+
+        </div>
+      </template>
+    </div>
+
+    <!-- ===== ABA: DESEMPENHO ===== -->
+    <div x-show="aba === 'desempenho'">
+
+      <!-- Cards de métricas -->
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4">
+          <p class="text-xs text-gray-500 mb-1">Cliques hoje</p>
+          <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesHoje ?? '—'"></p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4">
+          <p class="text-xs text-gray-500 mb-1">Cliques este mês</p>
+          <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesMes ?? '—'"></p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4">
+          <p class="text-xs text-gray-500 mb-1">Conversões</p>
+          <p class="text-2xl font-bold text-wa" x-text="stats.totalConversoes ?? '—'"></p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4">
+          <p class="text-xs text-gray-500 mb-1">Taxa de conversão</p>
+          <p class="text-2xl font-bold text-gray-900" x-text="stats.taxaConversao != null ? stats.taxaConversao + '%' : '—'"></p>
+        </div>
+      </div>
+
+      <!-- Gráfico -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Cliques × Conversões (30 dias)</h2>
+        <canvas id="graficoDesempenho"></canvas>
+      </div>
+
+      <!-- Performance por atendente -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Performance por Atendente</h2>
+
+        <template x-if="carregandoDesempenho">
+          <div class="space-y-2">
+            <template x-for="i in [1,2,3]" :key="i">
+              <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+          </div>
+        </template>
+
+        <template x-if="!carregandoDesempenho && numerosStats.length === 0">
+          <p class="text-sm text-gray-400">Nenhum dado disponível ainda.</p>
+        </template>
+
+        <template x-if="!carregandoDesempenho && numerosStats.length > 0">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-gray-500 border-b border-gray-100">
+                  <th class="text-left pb-2 font-medium">Atendente</th>
+                  <th class="text-right pb-2 font-medium">Cliques</th>
+                  <th class="text-right pb-2 font-medium">Conversões</th>
+                  <th class="text-right pb-2 font-medium">Taxa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="s in numerosStats" :key="s.number">
+                  <tr class="border-b border-gray-50">
+                    <td class="py-2 pr-4 font-medium text-gray-800" x-text="s.label || s.number"></td>
+                    <td class="py-2 pr-4 text-right text-gray-600" x-text="s.cliques"></td>
+                    <td class="py-2 pr-4 text-right text-gray-600" x-text="s.conversoes"></td>
+                    <td class="py-2 text-right">
+                      <span class="text-xs font-semibold text-wa" x-text="s.taxa + '%'"></span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ===== ABA: HISTÓRICO ===== -->
+    <div x-show="aba === 'historico'">
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-900">Conversões Registradas</h2>
+          <span class="text-xs text-gray-400" x-text="totalConversoes + ' registros'"></span>
+        </div>
+
+        <template x-if="carregandoHistorico">
+          <div class="space-y-2">
+            <template x-for="i in [1,2,3,4,5]" :key="i">
+              <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+          </div>
+        </template>
+
+        <template x-if="!carregandoHistorico && conversoes.length === 0">
+          <p class="text-sm text-gray-400">Nenhuma conversão registrada ainda.</p>
+        </template>
+
+        <template x-if="!carregandoHistorico && conversoes.length > 0">
+          <div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-gray-100">
+                    <th class="text-left pb-2 font-medium">Código</th>
+                    <th class="text-left pb-2 font-medium">Data</th>
+                    <th class="text-right pb-2 font-medium">Valor</th>
+                    <th class="text-left pb-2 font-medium hidden sm:table-cell">Atendente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="c in conversoes" :key="c.id">
+                    <tr class="border-b border-gray-50">
+                      <td class="py-2 pr-4">
+                        <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="c.trackingId || '—'"></code>
+                      </td>
+                      <td class="py-2 pr-4 text-gray-600 whitespace-nowrap text-xs" x-text="formatDate(c.createdAt)"></td>
+                      <td class="py-2 pr-4 text-right font-medium text-gray-900 whitespace-nowrap"
+                          x-text="c.value > 0 ? formatCurrency(c.value, c.currency) : '—'"></td>
+                      <td class="py-2 hidden sm:table-cell">
+                        <span x-show="c.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="c.selectedNumber"></span>
+                        <span x-show="!c.selectedNumber" class="text-xs text-gray-400">—</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <template x-if="totalPaginasHistorico > 1">
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span class="text-xs text-gray-400"
+                  x-text="`${(paginaHistorico-1)*porPaginaHistorico+1}–${Math.min(paginaHistorico*porPaginaHistorico, totalConversoes)} de ${totalConversoes}`">
+                </span>
+                <div class="flex items-center gap-1">
+                  <button @click="irPaginaHistorico(paginaHistorico - 1)" :disabled="paginaHistorico === 1"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    ← Anterior
+                  </button>
+                  <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${paginaHistorico} / ${totalPaginasHistorico}`"></span>
+                  <button @click="irPaginaHistorico(paginaHistorico + 1)" :disabled="paginaHistorico >= totalPaginasHistorico"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Próxima →
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const TOKEN = '{{token}}';
+    const API = `/cliente/${TOKEN}/api`;
+
+    const TIPOS_EVENTO = [
+      { value: 'Purchase',         label: 'Venda',        precisaValor: true  },
+      { value: 'Lead',             label: 'Lead',         precisaValor: false },
+      { value: 'InitiateCheckout', label: 'Checkout',     precisaValor: false },
+      { value: 'AddToCart',        label: 'Carrinho',     precisaValor: false },
+      { value: 'ViewContent',      label: 'Visualização', precisaValor: false },
+    ];
+
+    function portalCliente() {
+      return {
+        aba: 'registrar',
+
+        // Registrar
+        trackingId: '',
+        value: '',
+        currency: 'BRL',
+        eventoSelecionado: 'Purchase',
+        eventoEncontrado: null,
+        buscando: false,
+        erroId: null,
+        enviando: false,
+        resultado: null,
+
+        // Desempenho
+        stats: {},
+        numerosStats: [],
+        carregandoDesempenho: false,
+        graficoIniciado: false,
+
+        // Histórico
+        conversoes: [],
+        totalConversoes: 0,
+        paginaHistorico: 1,
+        porPaginaHistorico: 25,
+        carregandoHistorico: false,
+        historicoIniciado: false,
+
+        get eventoAtual() {
+          return TIPOS_EVENTO.find(e => e.value === this.eventoSelecionado) || null;
+        },
+
+        get totalPaginasHistorico() {
+          return Math.max(1, Math.ceil(this.totalConversoes / this.porPaginaHistorico));
+        },
+
+        async init() {
+          const params = new URLSearchParams(window.location.search);
+          const pre = params.get('id');
+          if (pre) { this.trackingId = pre.toUpperCase(); this.buscarEvento(); }
+        },
+
+        origemLabel(ev) {
+          if (ev.clickParams?.utm_source) return ev.clickParams.utm_source;
+          if (ev.fbclid) return 'Facebook';
+          if (ev.clickParams?.gclid) return 'Google';
+          return 'Direto';
+        },
+
+        async buscarEvento() {
+          const id = this.trackingId.trim().toUpperCase();
+          if (!id || id.length < 3) return;
+          this.buscando = true;
+          this.erroId = null;
+          this.eventoEncontrado = null;
+          try {
+            const res = await fetch(`${API}/lookup/${encodeURIComponent(id)}`);
+            const data = await res.json();
+            if (!res.ok) {
+              this.erroId = data.erro || 'ID não encontrado';
+            } else {
+              this.eventoEncontrado = data;
+            }
+          } catch {
+            this.erroId = 'Falha ao buscar. Verifique sua conexão.';
+          } finally {
+            this.buscando = false;
+          }
+        },
+
+        async registrar() {
+          if (!this.trackingId) return;
+          if (this.eventoAtual?.precisaValor && !this.value) return;
+          this.enviando = true;
+          try {
+            const body = {
+              trackingId: this.trackingId.trim().toUpperCase(),
+              eventName: this.eventoSelecionado,
+            };
+            if (this.eventoAtual?.precisaValor) {
+              body.value = parseFloat(this.value);
+              body.currency = this.currency;
+            }
+            const res = await fetch(`${API}/conversions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            const data = await res.json();
+            const label = this.eventoAtual?.label || this.eventoSelecionado;
+            if (res.ok && data.sucesso) {
+              this.resultado = { sucesso: true, mensagem: `Evento "${label}" registrado com sucesso.` };
+            } else if (res.status === 207) {
+              this.resultado = { sucesso: false, mensagem: `Salvo, mas erro na API: ${data.erro}` };
+            } else {
+              this.resultado = { sucesso: false, mensagem: data.erro || 'Erro desconhecido.' };
+            }
+          } catch {
+            this.resultado = { sucesso: false, mensagem: 'Falha de conexão. Tente novamente.' };
+          } finally {
+            this.enviando = false;
+          }
+        },
+
+        resetar() {
+          this.trackingId = '';
+          this.value = '';
+          this.eventoEncontrado = null;
+          this.erroId = null;
+          this.resultado = null;
+          this.eventoSelecionado = 'Purchase';
+        },
+
+        async carregarDesempenho() {
+          if (this.graficoIniciado) return;
+          this.carregandoDesempenho = true;
+          try {
+            const [resStats, resChart, resNumeros] = await Promise.all([
+              fetch(`${API}/stats`),
+              fetch(`${API}/chart`),
+              fetch(`${API}/numbers-stats`),
+            ]);
+            if (resStats.ok) this.stats = await resStats.json();
+            if (resNumeros.ok) this.numerosStats = await resNumeros.json();
+            if (resChart.ok) {
+              const dados = await resChart.json();
+              this.$nextTick(() => this.renderGrafico(dados));
+            }
+          } finally {
+            this.carregandoDesempenho = false;
+            this.graficoIniciado = true;
+          }
+        },
+
+        renderGrafico(dados) {
+          const ctx = document.getElementById('graficoDesempenho');
+          if (!ctx || !window.Chart) return;
+          const isDark = document.documentElement.classList.contains('dark');
+          const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+          const textColor = isDark ? '#64748b' : '#9ca3af';
+          new Chart(ctx, {
+            data: {
+              labels: dados.map(d => { const [,m,day] = d.date.split('-'); return `${day}/${m}`; }),
+              datasets: [
+                {
+                  type: 'bar',
+                  label: 'Cliques',
+                  data: dados.map(d => d.cliques),
+                  backgroundColor: 'rgba(37,211,102,0.25)',
+                  borderColor: '#25D366',
+                  borderWidth: 1,
+                  borderRadius: 3,
+                },
+                {
+                  type: 'line',
+                  label: 'Conversões',
+                  data: dados.map(d => d.conversoes),
+                  borderColor: '#128C7E',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  tension: 0.3,
+                  pointRadius: 3,
+                  pointBackgroundColor: '#128C7E',
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              interaction: { mode: 'index' },
+              plugins: { legend: { labels: { color: textColor, boxWidth: 12, font: { size: 11 } } } },
+              scales: {
+                x: { ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 15 }, grid: { color: gridColor } },
+                y: { beginAtZero: true, ticks: { color: textColor, font: { size: 10 }, precision: 0 }, grid: { color: gridColor } },
+              },
+            },
+          });
+        },
+
+        async carregarHistorico() {
+          this.carregandoHistorico = true;
+          try {
+            const offset = (this.paginaHistorico - 1) * this.porPaginaHistorico;
+            const res = await fetch(`${API}/conversions?limit=${this.porPaginaHistorico}&offset=${offset}`);
+            if (res.ok) {
+              const data = await res.json();
+              this.conversoes = data.items;
+              this.totalConversoes = data.total;
+            }
+          } finally {
+            this.carregandoHistorico = false;
+          }
+        },
+
+        async irPaginaHistorico(n) {
+          if (n < 1 || n > this.totalPaginasHistorico) return;
+          this.paginaHistorico = n;
+          await this.carregarHistorico();
+        },
+
+        formatDate(iso) {
+          if (!iso) return '—';
+          return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+        },
+
+        formatCurrency(value, currency) {
+          const symbols = { BRL: 'R$', USD: '$', EUR: '€' };
+          return `${symbols[currency] || currency} ${parseFloat(value).toFixed(2).replace('.', ',')}`;
+        },
+      };
+    }
+  </script>
+</body>
+</html>

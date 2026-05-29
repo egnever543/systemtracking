@@ -10,6 +10,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import apiRoutes from './routes/api.js';
 import trackerRoutes from './routes/tracker.js';
 import billingRoutes, { webhookHandler } from './routes/billing.js';
+import clientRoutes from './routes/client.js';
 import { sendWeeklyReports } from './services/weeklyReport.js';
 
 const app = new Hono();
@@ -44,6 +45,9 @@ app.route('/dashboard', dashboardRoutes);
 // API interna (protegida)
 app.use('/api/*', requireAuthApi);
 app.route('/api', apiRoutes);
+
+// Portal do cliente (sem auth — token na URL valida acesso)
+app.route('/cliente', clientRoutes);
 
 // Webhook público do Mercado Pago (sem auth)
 app.post('/webhook/mp', webhookHandler);

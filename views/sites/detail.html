@@ -237,6 +237,48 @@
       </form>
     </details>
 
+    <!-- Portal do Cliente -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5"
+         x-data="clientPortal()" x-init="init()">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-gray-900">Portal do Cliente</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Compartilhe um link para que seu cliente registre vendas e acompanhe resultados.</p>
+        </div>
+        <button @click="toggleAcesso()"
+          :class="ativo ? 'bg-wa' : 'bg-gray-200'"
+          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0"
+          :title="ativo ? 'Desativar acesso' : 'Ativar acesso'">
+          <span :class="ativo ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
+        </button>
+      </div>
+
+      <template x-if="!token && !ativo">
+        <p class="text-sm text-gray-400">Ative o acesso para gerar o link do cliente.</p>
+      </template>
+
+      <template x-if="token">
+        <div class="space-y-3">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3" x-data="{ copiado: false }">
+            <code class="text-xs text-gray-700 flex-1 break-all font-mono" x-text="portalUrl"></code>
+            <button @click="navigator.clipboard.writeText(portalUrl).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+              class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600 whitespace-nowrap">
+              <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
+            </button>
+          </div>
+          <button @click="regenerar()"
+            class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+            Gerar novo link (invalida o anterior)
+          </button>
+        </div>
+      </template>
+
+      <template x-if="errPortal">
+        <p class="mt-2 text-xs text-red-500" x-text="errPortal"></p>
+      </template>
+    </div>
+
     <!-- Eventos recentes -->
     <div class="bg-white rounded-xl border border-gray-100 p-5">
       <div class="flex items-center justify-between mb-4">
@@ -373,6 +415,52 @@
             const resStats = await fetch(`/api/sites/${SITE_ID}/numbers-stats`);
             if (resStats.ok) this.numerosStats = await resStats.json();
           }
+        },
+      };
+    }
+
+    function clientPortal() {
+      return {
+        token: SITE_DATA.clientToken || null,
+        ativo: SITE_DATA.clientAccessEnabled || false,
+        errPortal: null,
+        get portalUrl() {
+          return this.token ? `${window.location.origin}/cliente/${this.token}` : '';
+        },
+        init() {},
+        async toggleAcesso() {
+          if (!this.token && !this.ativo) {
+            await this.gerarToken();
+            return;
+          }
+          const novoEstado = !this.ativo;
+          const res = await fetch(`/api/sites/${SITE_ID}/client-access`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: novoEstado }),
+          });
+          if (res.ok) {
+            this.ativo = novoEstado;
+          } else {
+            const d = await res.json();
+            this.errPortal = d.erro || 'Erro ao alterar acesso.';
+          }
+        },
+        async gerarToken() {
+          this.errPortal = null;
+          const res = await fetch(`/api/sites/${SITE_ID}/client-token`, { method: 'POST' });
+          if (res.ok) {
+            const d = await res.json();
+            this.token = d.token;
+            this.ativo = true;
+          } else {
+            const d = await res.json();
+            this.errPortal = d.erro || 'Erro ao gerar token.';
+          }
+        },
+        async regenerar() {
+          if (!confirm('Isso vai invalidar o link atual. Continuar?')) return;
+          await this.gerarToken();
         },
       };
     }

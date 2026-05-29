@@ -410,4 +410,39 @@ api.delete('/keys/:keyId', async (c) => {
   return c.json({ ok: true });
 });
 
+api.post('/sites/:siteId/client-token', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const token = randomBytes(18).toString('base64url');
+  const { error } = await supabase.from('sites')
+    .update({ client_token: token, client_access_enabled: true })
+    .eq('id', siteId);
+
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ token, clientAccessEnabled: true });
+});
+
+api.patch('/sites/:siteId/client-access', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+  const body = await c.req.json().catch(() => null);
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const enabled = !!body?.enabled;
+  const { error } = await supabase.from('sites')
+    .update({ client_access_enabled: enabled })
+    .eq('id', siteId);
+
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ clientAccessEnabled: enabled });
+});
+
 export default api;

@@ -35,6 +35,8 @@ export const mapSite = (s) => !s ? null : {
   googleRefreshToken: s.google_refresh_token,
   tiktokPixelId: s.tiktok_pixel_id,
   tiktokAccessToken: s.tiktok_access_token,
+  clientToken: s.client_token ?? null,
+  clientAccessEnabled: s.client_access_enabled ?? false,
   createdAt: s.created_at,
 };
 
