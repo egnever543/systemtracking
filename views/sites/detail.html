@@ -242,62 +242,88 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="font-semibold text-gray-900">Cliques Recentes</h2>
         <div class="flex items-center gap-3">
-          <select x-model="periodoEventos" @change="carregarEventos()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
+          <select x-model="periodoEventos" @change="pagina = 1; carregarEventos()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
             <option value="7">7 dias</option>
             <option value="30">30 dias</option>
             <option value="90">90 dias</option>
           </select>
-          <span class="text-xs text-gray-500" x-text="eventos.length + ' registros'"></span>
+          <span class="text-xs text-gray-500" x-text="totalEventos + ' registros'"></span>
         </div>
       </div>
 
       <template x-if="carregando">
-        <p class="text-sm text-gray-400">Carregando...</p>
+        <div class="space-y-2 py-2">
+          <template x-for="i in [1,2,3,4,5]" :key="i">
+            <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+          </template>
+        </div>
       </template>
 
-      <template x-if="!carregando && eventos.length === 0">
+      <template x-if="!carregando && totalEventos === 0">
         <p class="text-sm text-gray-400">Nenhum clique registrado ainda. Instale o snippet no site para começar.</p>
       </template>
 
-      <template x-if="!carregando && eventos.length > 0">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-gray-500 border-b border-gray-100">
-                <th class="text-left pb-2 font-medium">ID</th>
-                <th class="text-left pb-2 font-medium">Data/Hora</th>
-                <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
-                <th class="text-left pb-2 font-medium">Origem</th>
-                <th class="text-left pb-2 font-medium hidden md:table-cell">Número</th>
-                <th class="text-left pb-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="ev in eventos" :key="ev.id">
-                <tr class="border-b border-gray-50 hover:bg-gray-50">
-                  <td class="py-2 pr-4">
-                    <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.trackingId"></code>
-                  </td>
-                  <td class="py-2 pr-4 text-gray-600 whitespace-nowrap" x-text="formatDate(ev.createdAt)"></td>
-                  <td class="py-2 pr-4 text-gray-500 hidden md:table-cell max-w-[200px] truncate" x-text="ev.pageUrl || '—'" :title="ev.pageUrl"></td>
-                  <td class="py-2 pr-4">
-                    <span x-show="ev.clickParams && ev.clickParams.utm_source" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded" x-text="ev.clickParams && ev.clickParams.utm_source"></span>
-                    <span x-show="!ev.clickParams?.utm_source && ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Facebook</span>
-                    <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
-                    <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
-                  </td>
-                  <td class="py-2 pr-4 hidden md:table-cell">
-                    <span x-show="ev.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.selectedNumber"></span>
-                    <span x-show="!ev.selectedNumber" class="text-xs text-gray-400">—</span>
-                  </td>
-                  <td class="py-2">
-                    <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
-                    <span x-show="!ev.convertido" class="text-xs text-gray-400">Aguardando</span>
-                  </td>
+      <template x-if="!carregando && totalEventos > 0">
+        <div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-gray-500 border-b border-gray-100">
+                  <th class="text-left pb-2 font-medium">ID</th>
+                  <th class="text-left pb-2 font-medium">Data/Hora</th>
+                  <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
+                  <th class="text-left pb-2 font-medium">Origem</th>
+                  <th class="text-left pb-2 font-medium hidden md:table-cell">Número</th>
+                  <th class="text-left pb-2 font-medium">Status</th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <template x-for="ev in eventos" :key="ev.id">
+                  <tr class="border-b border-gray-50 hover:bg-gray-50">
+                    <td class="py-2 pr-4">
+                      <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.trackingId"></code>
+                    </td>
+                    <td class="py-2 pr-4 text-gray-600 whitespace-nowrap" x-text="formatDate(ev.createdAt)"></td>
+                    <td class="py-2 pr-4 text-gray-500 hidden md:table-cell max-w-[200px] truncate" x-text="ev.pageUrl || '—'" :title="ev.pageUrl"></td>
+                    <td class="py-2 pr-4">
+                      <span x-show="ev.clickParams && ev.clickParams.utm_source" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded" x-text="ev.clickParams && ev.clickParams.utm_source"></span>
+                      <span x-show="!ev.clickParams?.utm_source && ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Facebook</span>
+                      <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
+                      <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
+                    </td>
+                    <td class="py-2 pr-4 hidden md:table-cell">
+                      <span x-show="ev.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.selectedNumber"></span>
+                      <span x-show="!ev.selectedNumber" class="text-xs text-gray-400">—</span>
+                    </td>
+                    <td class="py-2">
+                      <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
+                      <span x-show="!ev.convertido" class="text-xs text-gray-400">Aguardando</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginação -->
+          <template x-if="totalPaginas > 1">
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+              <span class="text-xs text-gray-400"
+                x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalEventos)} de ${totalEventos}`">
+              </span>
+              <div class="flex items-center gap-1">
+                <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
+                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Anterior
+                </button>
+                <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
+                <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
+                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Próxima →
+                </button>
+              </div>
+            </div>
+          </template>
         </div>
       </template>
     </div>
@@ -357,14 +383,29 @@
         eventos: [],
         carregando: true,
         periodoEventos: 30,
+        pagina: 1,
+        porPagina: 25,
+        totalEventos: 0,
+        get totalPaginas() { return Math.max(1, Math.ceil(this.totalEventos / this.porPagina)); },
         async init() {
           await this.carregarEventos();
           this.carregarGrafico();
         },
+        async irPagina(n) {
+          if (n < 1 || n > this.totalPaginas) return;
+          this.pagina = n;
+          await this.carregarEventos();
+          document.querySelector('.bg-white.rounded-xl.border.border-gray-100.p-5:last-of-type')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
         async carregarEventos() {
           this.carregando = true;
-          const res = await fetch(`/api/sites/${SITE_ID}/events?limit=100&days=${this.periodoEventos}`);
-          if (res.ok) this.eventos = await res.json();
+          const offset = (this.pagina - 1) * this.porPagina;
+          const res = await fetch(`/api/sites/${SITE_ID}/events?limit=${this.porPagina}&offset=${offset}&days=${this.periodoEventos}`);
+          if (res.ok) {
+            const data = await res.json();
+            this.eventos = data.items;
+            this.totalEventos = data.total;
+          }
           this.carregando = false;
         },
         async carregarGrafico() {

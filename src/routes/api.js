@@ -196,41 +196,47 @@ api.get('/stats', async (c) => {
 api.get('/sites/:siteId/events', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
-  const limit = parseInt(c.req.query('limit') || '50');
+  const limit = Math.min(100, Math.max(5, parseInt(c.req.query('limit') || '25')));
+  const offset = Math.max(0, parseInt(c.req.query('offset') || '0'));
 
   const { data: rawSite } = await supabase.from('sites').select('id')
     .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
-
   if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
 
-  const days = c.req.query('days') ? Math.max(1, parseInt(c.req.query('days'))) : null;
-
-  let eventsQuery = supabase.from('events')
-    .select('id, tracking_id, fbclid, page_url, click_params, selected_number, created_at')
-    .eq('site_id', siteId)
-    .order('created_at', { ascending: false });
-
-  if (days) {
+  let sinceStr = null;
+  if (c.req.query('days')) {
     const since = new Date();
-    since.setDate(since.getDate() - days);
-    eventsQuery = eventsQuery.gte('created_at', since.toISOString());
+    since.setDate(since.getDate() - Math.max(1, parseInt(c.req.query('days'))));
+    sinceStr = since.toISOString();
   }
 
-  const { data: rows } = await eventsQuery.limit(limit);
+  let countQ = supabase.from('events').select('*', { count: 'exact', head: true }).eq('site_id', siteId);
+  let dataQ = supabase.from('events')
+    .select('id, tracking_id, fbclid, page_url, click_params, selected_number, created_at')
+    .eq('site_id', siteId).order('created_at', { ascending: false });
+  if (sinceStr) { countQ = countQ.gte('created_at', sinceStr); dataQ = dataQ.gte('created_at', sinceStr); }
+
+  const [{ count: total }, { data: rows }] = await Promise.all([
+    countQ,
+    dataQ.range(offset, offset + limit - 1),
+  ]);
 
   const { data: convRows } = await supabase.from('conversions').select('event_id').eq('site_id', siteId);
   const convSet = new Set((convRows || []).map((r) => r.event_id));
 
-  return c.json((rows || []).map((e) => ({
-    id: e.id,
-    trackingId: e.tracking_id,
-    fbclid: e.fbclid,
-    pageUrl: e.page_url,
-    clickParams: e.click_params ?? null,
-    selectedNumber: e.selected_number ?? null,
-    createdAt: e.created_at,
-    convertido: convSet.has(e.id),
-  })));
+  return c.json({
+    items: (rows || []).map((e) => ({
+      id: e.id,
+      trackingId: e.tracking_id,
+      fbclid: e.fbclid,
+      pageUrl: e.page_url,
+      clickParams: e.click_params ?? null,
+      selectedNumber: e.selected_number ?? null,
+      createdAt: e.created_at,
+      convertido: convSet.has(e.id),
+    })),
+    total: total || 0,
+  });
 });
 
 api.get('/sites/:siteId/numbers', async (c) => {
