@@ -42,8 +42,8 @@
       <p class="text-gray-500 text-sm">Aqui está um resumo da sua atividade.</p>
     </div>
 
-    <!-- Onboarding (oculto quando concluído) -->
-    <template x-if="!onboarding.concluido">
+    <!-- Onboarding (oculto quando concluído ou carregando) -->
+    <template x-if="!carregando && !onboarding.concluido">
       <div class="bg-white rounded-xl border border-gray-100 p-5 mb-6">
         <h2 class="text-sm font-semibold text-gray-900 mb-1">Primeiros passos</h2>
         <p class="text-xs text-gray-500 mb-4">Complete a configuração para começar a rastrear conversões.</p>
@@ -125,9 +125,11 @@
     function dashboard() {
       return {
         stats: {},
+        carregando: true,
         async init() {
           const res = await fetch('/api/stats');
           if (res.ok) this.stats = await res.json();
+          this.carregando = false;
         },
         get onboarding() {
           const temSite = (this.stats.totalSites || 0) > 0;
