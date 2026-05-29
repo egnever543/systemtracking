@@ -179,8 +179,10 @@ dash.get('/docs', async (c) => {
 
 dash.get('/settings', async (c) => {
   const user = c.get('user');
+  const { data: fullUser } = await supabase.from('users').select('logo_url').eq('id', user.userId).maybeSingle();
   const html = render('settings.html', {
     subscriptionBanner: await getSubscriptionBanner(user.userId),
+    logoUrl: fullUser?.logo_url || '',
   });
   return c.html(html);
 });

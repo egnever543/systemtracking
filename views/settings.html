@@ -37,7 +37,52 @@
   <main class="max-w-2xl mx-auto px-4 py-6" x-data="settingsPage()" x-init="init()">
     <div class="mb-6">
       <h1 class="text-xl font-bold text-gray-900">Configurações</h1>
-      <p class="text-gray-500 text-sm mt-1">Gerencie suas chaves de API para integrar com n8n, Zapier e outras ferramentas.</p>
+    </div>
+
+    <!-- Logo / Foto de perfil -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+      <h2 class="text-sm font-semibold text-gray-900 mb-1">Logo / Foto de perfil</h2>
+      <p class="text-xs text-gray-400 mb-4">Aparece no portal do cliente no lugar da marca padrão. JPG, PNG ou WebP até 2 MB.</p>
+
+      <div class="flex items-center gap-5">
+        <!-- Preview -->
+        <div class="shrink-0">
+          <template x-if="logoUrl">
+            <img :src="logoUrl" class="w-16 h-16 rounded-xl object-cover border border-gray-200" alt="Logo atual" />
+          </template>
+          <template x-if="!logoUrl">
+            <div class="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center">
+              <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+              </svg>
+            </div>
+          </template>
+        </div>
+
+        <!-- Ações -->
+        <div class="flex-1 space-y-2">
+          <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-gray-300 hover:border-gray-400 rounded-lg text-sm text-gray-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+            <span x-text="uploadandoLogo ? 'Enviando...' : (logoUrl ? 'Trocar imagem' : 'Enviar imagem')"></span>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden"
+                   :disabled="uploadandoLogo"
+                   @change="uploadLogo($event)" />
+          </label>
+
+          <template x-if="logoUrl">
+            <button @click="removerLogo()"
+              class="block text-xs text-red-400 hover:text-red-600 transition-colors">
+              Remover logo
+            </button>
+          </template>
+
+          <template x-if="logoErro">
+            <p class="text-xs text-red-500" x-text="logoErro"></p>
+          </template>
+        </div>
+      </div>
     </div>
 
     <!-- Chave recém criada -->
@@ -131,6 +176,8 @@
   </main>
 
   <script>
+    const LOGO_URL_INICIAL = '{{logoUrl}}';
+
     function settingsPage() {
       return {
         keys: [],
@@ -140,8 +187,41 @@
         novaChave: null,
         copiado: false,
 
+        logoUrl: LOGO_URL_INICIAL,
+        uploadandoLogo: false,
+        logoErro: null,
+
         async init() {
           await this.carregarChaves();
+        },
+
+        async uploadLogo(event) {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          this.logoErro = null;
+          this.uploadandoLogo = true;
+          try {
+            const form = new FormData();
+            form.append('logo', file);
+            const res = await fetch('/api/profile/logo', { method: 'POST', body: form });
+            const data = await res.json();
+            if (res.ok) {
+              this.logoUrl = data.logoUrl + '?t=' + Date.now();
+            } else {
+              this.logoErro = data.erro || 'Erro no upload.';
+            }
+          } catch {
+            this.logoErro = 'Falha de conexão.';
+          } finally {
+            this.uploadandoLogo = false;
+            event.target.value = '';
+          }
+        },
+
+        async removerLogo() {
+          if (!confirm('Remover logo?')) return;
+          await fetch('/api/profile/logo', { method: 'DELETE' });
+          this.logoUrl = null;
         },
 
         async carregarChaves() {

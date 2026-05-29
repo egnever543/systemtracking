@@ -27,11 +27,16 @@ async function resolveToken(c, next) {
   return next();
 }
 
-client.get('/:token', resolveToken, (c) => {
+client.get('/:token', resolveToken, async (c) => {
   const site = c.get('site');
   const token = c.req.param('token');
+  const { data: owner } = await supabase.from('users').select('logo_url').eq('id', site.userId).maybeSingle();
+  const logoUrl = owner?.logo_url || '';
   let html = readFileSync(join(viewsDir, 'client/dashboard.html'), 'utf-8');
-  html = html.replaceAll('{{siteName}}', site.name).replaceAll('{{token}}', token);
+  html = html
+    .replaceAll('{{siteName}}', site.name)
+    .replaceAll('{{token}}', token)
+    .replaceAll('{{logoUrl}}', logoUrl);
   return c.html(html);
 });
 

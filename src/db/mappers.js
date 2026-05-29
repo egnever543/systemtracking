@@ -17,6 +17,7 @@ export const mapUser = (u) => !u ? null : {
   subscriptionStatus: u.subscription_status,
   subscriptionExpiresAt: u.subscription_expires_at,
   mpSubscriptionId: u.mp_subscription_id,
+  logoUrl: u.logo_url ?? null,
 };
 
 export const mapSite = (s) => !s ? null : {

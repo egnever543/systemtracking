@@ -410,6 +410,43 @@ api.delete('/keys/:keyId', async (c) => {
   return c.json({ ok: true });
 });
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+api.post('/profile/logo', async (c) => {
+  const user = c.get('user');
+
+  let formData;
+  try { formData = await c.req.formData(); } catch {
+    return c.json({ erro: 'Requisição inválida' }, 400);
+  }
+
+  const file = formData.get('logo');
+  if (!file || typeof file === 'string') return c.json({ erro: 'Arquivo não enviado' }, 400);
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return c.json({ erro: 'Use JPG, PNG ou WebP (máx 2 MB)' }, 400);
+  if (file.size > 2 * 1024 * 1024) return c.json({ erro: 'Imagem deve ter no máximo 2 MB' }, 400);
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const fileName = user.userId;
+
+  const { error: upErr } = await supabase.storage.from('logos').upload(fileName, buffer, {
+    contentType: file.type,
+    upsert: true,
+  });
+  if (upErr) return c.json({ erro: `Erro no upload: ${upErr.message}` }, 500);
+
+  const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
+
+  await supabase.from('users').update({ logo_url: publicUrl }).eq('id', user.userId);
+  return c.json({ logoUrl: publicUrl });
+});
+
+api.delete('/profile/logo', async (c) => {
+  const user = c.get('user');
+  await supabase.storage.from('logos').remove([user.userId]);
+  await supabase.from('users').update({ logo_url: null }).eq('id', user.userId);
+  return c.json({ ok: true });
+});
+
 api.post('/sites/:siteId/client-token', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
