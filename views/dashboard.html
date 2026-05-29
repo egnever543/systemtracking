@@ -8,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
   <link rel="stylesheet" href="/assets/theme.css">
+  <script src="/assets/theme.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-gray-50">
@@ -40,7 +41,7 @@
     </div>
 
     <!-- Cards de métricas -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
       <div class="bg-white rounded-xl border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Cliques hoje</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesHoje ?? '—'"></p>
@@ -56,6 +57,10 @@
       <div class="bg-white rounded-xl border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Conversões</p>
         <p class="text-2xl font-bold text-wa" x-text="stats.totalConversoes ?? '—'"></p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 p-4">
+        <p class="text-xs text-gray-500 mb-1">Taxa de conversão</p>
+        <p class="text-2xl font-bold text-gray-900" x-text="stats.taxaConversao != null ? stats.taxaConversao + '%' : '—'"></p>
       </div>
     </div>
 

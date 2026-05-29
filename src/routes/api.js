@@ -127,11 +127,20 @@ api.get('/stats', async (c) => {
     .select('*', { count: 'exact', head: true })
     .in('site_id', siteIds);
 
+  const { count: totalCliques } = await supabase.from('events')
+    .select('*', { count: 'exact', head: true })
+    .in('site_id', siteIds);
+
+  const total = totalCliques || 0;
+  const taxaConversao = total > 0 ? Math.round(((totalConversoes || 0) / total) * 100) : 0;
+
   return c.json({
     cliquesHoje: cliquesHoje || 0,
     cliquesSemana: cliquesSemana || 0,
     cliquesMes: cliquesMes || 0,
     totalConversoes: totalConversoes || 0,
+    totalCliques: total,
+    taxaConversao,
   });
 });
 
@@ -145,11 +154,20 @@ api.get('/sites/:siteId/events', async (c) => {
 
   if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
 
-  const { data: rows } = await supabase.from('events')
+  const days = c.req.query('days') ? Math.max(1, parseInt(c.req.query('days'))) : null;
+
+  let eventsQuery = supabase.from('events')
     .select('id, tracking_id, fbclid, page_url, click_params, selected_number, created_at')
     .eq('site_id', siteId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    .order('created_at', { ascending: false });
+
+  if (days) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    eventsQuery = eventsQuery.gte('created_at', since.toISOString());
+  }
+
+  const { data: rows } = await eventsQuery.limit(limit);
 
   const { data: convRows } = await supabase.from('conversions').select('event_id').eq('site_id', siteId);
   const convSet = new Set((convRows || []).map((r) => r.event_id));
@@ -213,6 +231,78 @@ api.delete('/sites/:siteId/numbers/:numberId', async (c) => {
 
   await supabase.from('site_numbers').delete().eq('id', numberId).eq('site_id', siteId);
   return c.json({ ok: true });
+});
+
+api.get('/sites/:siteId/chart', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+  const days = Math.min(90, Math.max(7, parseInt(c.req.query('days') || '30')));
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+
+  const { data: events } = await supabase.from('events')
+    .select('id, created_at')
+    .eq('site_id', siteId)
+    .gte('created_at', since.toISOString());
+
+  const eventIds = (events || []).map(e => e.id);
+  let convSet = new Set();
+  if (eventIds.length > 0) {
+    const { data: convs } = await supabase.from('conversions')
+      .select('event_id').in('event_id', eventIds);
+    convSet = new Set((convs || []).map(cv => cv.event_id));
+  }
+
+  const buckets = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date(since);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    buckets[key] = { date: key, cliques: 0, conversoes: 0 };
+  }
+  for (const ev of (events || [])) {
+    const key = new Date(ev.created_at).toISOString().slice(0, 10);
+    if (buckets[key]) {
+      buckets[key].cliques++;
+      if (convSet.has(ev.id)) buckets[key].conversoes++;
+    }
+  }
+
+  return c.json(Object.values(buckets));
+});
+
+api.get('/sites/:siteId/numbers-stats', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const [{ data: events }, { data: convs }] = await Promise.all([
+    supabase.from('events').select('id, selected_number').eq('site_id', siteId),
+    supabase.from('conversions').select('event_id').eq('site_id', siteId),
+  ]);
+
+  const convSet = new Set((convs || []).map(cv => cv.event_id));
+  const stats = {};
+  for (const ev of (events || [])) {
+    const num = ev.selected_number || '(padrão)';
+    if (!stats[num]) stats[num] = { number: num, cliques: 0, conversoes: 0 };
+    stats[num].cliques++;
+    if (convSet.has(ev.id)) stats[num].conversoes++;
+  }
+
+  return c.json(Object.values(stats).map(s => ({
+    ...s,
+    taxa: s.cliques > 0 ? Math.round((s.conversoes / s.cliques) * 100) : 0,
+  })).sort((a, b) => b.cliques - a.cliques));
 });
 
 export default api;

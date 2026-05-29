@@ -9,6 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
   <link rel="stylesheet" href="/assets/theme.css">
   <script src="/assets/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-gray-50">
@@ -77,6 +78,12 @@
       </div>
     </div>
 
+    <!-- Gráfico de Cliques -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
+      <h2 class="font-semibold text-gray-900 mb-4">Desempenho (30 dias)</h2>
+      <canvas id="graficoCliques"></canvas>
+    </div>
+
     <!-- Distribuição de Números -->
     <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="numbersManager()">
       <div class="mb-4">
@@ -93,6 +100,9 @@
                 <th class="text-left pb-2 font-medium">Número</th>
                 <th class="text-left pb-2 font-medium">Peso</th>
                 <th class="text-left pb-2 font-medium">% Real</th>
+                <th class="text-left pb-2 font-medium">Cliques</th>
+                <th class="text-left pb-2 font-medium">Conversões</th>
+                <th class="text-left pb-2 font-medium">Taxa</th>
                 <th></th>
               </tr>
             </thead>
@@ -103,6 +113,9 @@
                   <td class="py-2 pr-4"><code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="n.number"></code></td>
                   <td class="py-2 pr-4 text-gray-600" x-text="n.weight"></td>
                   <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="calcPercent(n.weight) + '%'"></span></td>
+                  <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).cliques"></td>
+                  <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).conversoes"></td>
+                  <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="getStats(n.number).taxa + '%'"></span></td>
                   <td class="py-2"><button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button></td>
                 </tr>
               </template>
@@ -188,7 +201,14 @@
     <div class="bg-white rounded-xl border border-gray-100 p-5">
       <div class="flex items-center justify-between mb-4">
         <h2 class="font-semibold text-gray-900">Cliques Recentes</h2>
-        <span class="text-xs text-gray-500" x-text="eventos.length + ' registros'"></span>
+        <div class="flex items-center gap-3">
+          <select x-model="periodoEventos" @change="carregarEventos()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
+            <option value="7">7 dias</option>
+            <option value="30">30 dias</option>
+            <option value="90">90 dias</option>
+          </select>
+          <span class="text-xs text-gray-500" x-text="eventos.length + ' registros'"></span>
+        </div>
       </div>
 
       <template x-if="carregando">
@@ -250,10 +270,18 @@
     function numbersManager() {
       return {
         numeros: [],
+        numerosStats: [],
         novo: { label: '', number: '', weight: 50 },
         async init() {
-          const res = await fetch(`/api/sites/${SITE_ID}/numbers`);
+          const [res, resStats] = await Promise.all([
+            fetch(`/api/sites/${SITE_ID}/numbers`),
+            fetch(`/api/sites/${SITE_ID}/numbers-stats`),
+          ]);
           if (res.ok) this.numeros = await res.json();
+          if (resStats.ok) this.numerosStats = await resStats.json();
+        },
+        getStats(number) {
+          return this.numerosStats.find(s => s.number === number) || { cliques: 0, conversoes: 0, taxa: 0 };
         },
         calcPercent(weight) {
           const total = this.numeros.reduce((s, n) => s + n.weight, 0);
@@ -268,11 +296,17 @@
           if (res.ok) {
             this.numeros.push(await res.json());
             this.novo = { label: '', number: '', weight: 50 };
+            const resStats = await fetch(`/api/sites/${SITE_ID}/numbers-stats`);
+            if (resStats.ok) this.numerosStats = await resStats.json();
           }
         },
         async remover(id) {
           const res = await fetch(`/api/sites/${SITE_ID}/numbers/${id}`, { method: 'DELETE' });
-          if (res.ok) this.numeros = this.numeros.filter(n => n.id !== id);
+          if (res.ok) {
+            this.numeros = this.numeros.filter(n => n.id !== id);
+            const resStats = await fetch(`/api/sites/${SITE_ID}/numbers-stats`);
+            if (resStats.ok) this.numerosStats = await resStats.json();
+          }
         },
       };
     }
@@ -282,10 +316,62 @@
         site: SITE_DATA,
         eventos: [],
         carregando: true,
+        periodoEventos: 30,
         async init() {
-          const res = await fetch(`/api/sites/${SITE_ID}/events?limit=50`);
+          await this.carregarEventos();
+          this.carregarGrafico();
+        },
+        async carregarEventos() {
+          this.carregando = true;
+          const res = await fetch(`/api/sites/${SITE_ID}/events?limit=100&days=${this.periodoEventos}`);
           if (res.ok) this.eventos = await res.json();
           this.carregando = false;
+        },
+        async carregarGrafico() {
+          const res = await fetch(`/api/sites/${SITE_ID}/chart?days=30`);
+          if (!res.ok) return;
+          const dados = await res.json();
+          const ctx = document.getElementById('graficoCliques');
+          if (!ctx || !window.Chart) return;
+          const isDark = document.documentElement.classList.contains('dark');
+          const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+          const textColor = isDark ? '#64748b' : '#9ca3af';
+          new Chart(ctx, {
+            data: {
+              labels: dados.map(d => { const [,m,day] = d.date.split('-'); return `${day}/${m}`; }),
+              datasets: [
+                {
+                  type: 'bar',
+                  label: 'Cliques',
+                  data: dados.map(d => d.cliques),
+                  backgroundColor: 'rgba(37,211,102,0.25)',
+                  borderColor: '#25D366',
+                  borderWidth: 1,
+                  borderRadius: 3,
+                },
+                {
+                  type: 'line',
+                  label: 'Conversões',
+                  data: dados.map(d => d.conversoes),
+                  borderColor: '#128C7E',
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  tension: 0.3,
+                  pointRadius: 3,
+                  pointBackgroundColor: '#128C7E',
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              interaction: { mode: 'index' },
+              plugins: { legend: { labels: { color: textColor, boxWidth: 12, font: { size: 11 } } } },
+              scales: {
+                x: { ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 15 }, grid: { color: gridColor } },
+                y: { beginAtZero: true, ticks: { color: textColor, font: { size: 10 }, precision: 0 }, grid: { color: gridColor } },
+              },
+            },
+          });
         },
         formatDate(iso) {
           if (!iso) return '—';
