@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentação — WA CAPI Tracker</title>
+  <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
+  <link rel="stylesheet" href="/assets/theme.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-wa rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <span class="font-bold text-gray-900 text-sm">WA CAPI</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">Início</a>
+      <a href="/dashboard/sites" class="text-sm text-gray-600 hover:text-gray-900">Sites</a>
+      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">Assinatura</a>
+      <a href="/dashboard/docs" class="text-sm font-medium text-gray-900">Docs</a>
+      <a href="/dashboard/conversoes/registrar" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">+ Registrar Venda</a>
+      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
+      <button onclick="toggleTheme()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded" title="Alternar tema">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+    </div>
+  </nav>
+  {{subscriptionBanner}}
+
+  <div class="max-w-4xl mx-auto px-4 py-6 flex gap-8">
+
+    <!-- Sidebar TOC -->
+    <aside class="hidden lg:block w-52 shrink-0">
+      <div class="sticky top-20 bg-white rounded-xl border border-gray-100 p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Conteúdo</p>
+        <nav class="space-y-0.5 text-sm">
+          <a href="#como-funciona"   class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Como funciona</a>
+          <a href="#configurar-site" class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Configurar um site</a>
+          <a href="#link"            class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Link de rastreamento</a>
+          <a href="#snippet"         class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Snippet</a>
+          <a href="#ab"              class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Distribuição A/B</a>
+          <a href="#registrar-venda" class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Registrar venda</a>
+          <a href="#capi"            class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Facebook CAPI</a>
+          <a href="#faq"             class="block px-2 py-1.5 rounded-lg text-gray-600 hover:text-wa hover:bg-gray-50 transition-colors">Perguntas frequentes</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 min-w-0 space-y-6">
+
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Documentação</h1>
+        <p class="text-gray-500 text-sm mt-1">Tudo que você precisa saber para usar o WA CAPI Tracker.</p>
+      </div>
+
+      <!-- 1. Como funciona -->
+      <section id="como-funciona" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">1. Como funciona</h2>
+        <p class="text-sm text-gray-600 mb-5">O sistema conecta o clique no botão do WhatsApp com a venda que acontece na conversa, permitindo enviar um evento <strong>Purchase</strong> ao Facebook com o <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> original do anúncio.</p>
+        <div class="space-y-3">
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Visitante acessa a página</strong> vindo de um anúncio do Facebook com <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> na URL.</p>
+          </div>
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Clica no botão do WhatsApp</strong> cujo link aponta para a URL de rastreamento.</p>
+          </div>
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Sistema registra o clique</strong> — salva o <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code>, IP e user-agent, gera um ID único como <code class="bg-gray-100 px-1 rounded text-xs">WA-8F3K2P</code> e dispara um evento <strong>Lead</strong> ao Facebook CAPI.</p>
+          </div>
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Visitante é redirecionado</strong> ao WhatsApp com a mensagem pré-preenchida contendo o ID, ex: <em>"Olá, vim pelo anúncio <strong>[WA-8F3K2P]</strong>"</em>.</p>
+          </div>
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">5</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Venda acontece</strong> e o vendedor vê o ID na primeira mensagem do cliente.</p>
+          </div>
+          <div class="flex gap-3 text-sm">
+            <span class="w-6 h-6 rounded-full bg-wa text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">6</span>
+            <p class="text-gray-600"><strong class="text-gray-900">Vendedor registra a venda</strong> informando o ID e o valor. O sistema envia um evento <strong>Purchase</strong> ao Facebook CAPI com o <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> original, fechando o ciclo de atribuição.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Configurar site -->
+      <section id="configurar-site" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">2. Configurar um site</h2>
+        <p class="text-sm text-gray-600 mb-4">Acesse <strong>Sites → Novo Site</strong> e preencha os campos:</p>
+        <div class="space-y-4 text-sm">
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Nome</span>
+            <span class="text-gray-600">Identificação interna (ex: "Loja Principal").</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Domínio</span>
+            <span class="text-gray-600">Apenas referência visual, não valida a origem das requisições.</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">WhatsApp</span>
+            <span class="text-gray-600">Número padrão com DDI+DDD sem espaços (ex: <code class="bg-gray-100 px-1 rounded text-xs">5511999990000</code>). Usado se nenhum número A/B for cadastrado.</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Mensagem</span>
+            <span class="text-gray-600">Texto pré-preenchido no WhatsApp. O ID de rastreamento é adicionado automaticamente entre colchetes ao final.</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Pixel ID</span>
+            <span class="text-gray-600">ID do seu Pixel do Facebook. Encontrado em <em>Gerenciador de Eventos → seu Pixel → Configurações</em>.</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Token da API</span>
+            <span class="text-gray-600">Token de acesso do sistema para a CAPI. Gerado em <em>Gerenciador de Eventos → Conversions API → Gerar token</em>.</span>
+          </div>
+          <div class="grid grid-cols-[120px_1fr] gap-3">
+            <span class="font-semibold text-gray-900">Cód. de teste</span>
+            <span class="text-gray-600">Opcional. Quando preenchido, eventos vão somente para a ferramenta <em>Testar Eventos</em> do Facebook, sem afetar dados reais. <strong>Remova em produção.</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Link de rastreamento -->
+      <section id="link" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">3. Link de rastreamento</h2>
+        <p class="text-sm text-gray-600 mb-3">O link de rastreamento fica na página de detalhes de cada site. Ele tem o formato:</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+          <code class="text-xs text-gray-700 font-mono">https://seudominio.com/r/{siteId}</code>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">Ao ser acessado, o servidor automaticamente:</p>
+        <ol class="space-y-1.5 text-sm text-gray-600 list-decimal list-inside mb-4">
+          <li>Registra o clique com todos os parâmetros da URL</li>
+          <li>Dispara um evento <strong>Lead</strong> ao Facebook CAPI em segundo plano</li>
+          <li>Redireciona o usuário para o WhatsApp com o ID no texto</li>
+        </ol>
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 mb-3">
+          <strong>Importante:</strong> coloque este link diretamente no <code class="bg-amber-100 px-1 rounded text-xs">href</code> dos seus botões. Funciona em todos os dispositivos, incluindo iPhone (iOS Safari).
+        </div>
+        <p class="text-sm text-gray-600">Se o visitante não vier com parâmetros de anúncio (tráfego orgânico), o redirecionamento funciona normalmente — apenas sem dados de atribuição.</p>
+      </section>
+
+      <!-- 4. Snippet -->
+      <section id="snippet" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-1">4. Snippet <span class="text-sm font-normal text-gray-400">(opcional)</span></h2>
+        <p class="text-sm text-gray-600 mt-2 mb-4">Necessário apenas se o <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> não estiver diretamente no link de rastreamento — por exemplo, quando o link de destino do anúncio aponta para a página do seu site, não para o link de rastreamento.</p>
+        <p class="text-sm text-gray-600 mb-3">Cole antes do <code class="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code> da página:</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+          <code class="text-xs text-gray-700 font-mono">&lt;script src="https://seudominio.com/tracker.js" data-site="{siteId}" async&gt;&lt;/script&gt;&lt;/code&gt;</code>
+        </div>
+        <p class="text-sm text-gray-600">O snippet lê os parâmetros da URL da página (<code class="bg-gray-100 px-1 rounded text-xs">fbclid</code>, <code class="bg-gray-100 px-1 rounded text-xs">gclid</code>, <code class="bg-gray-100 px-1 rounded text-xs">utm_*</code> etc.) e os adiciona automaticamente a todos os links de rastreamento presentes na página.</p>
+      </section>
+
+      <!-- 5. A/B -->
+      <section id="ab" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">5. Distribuição A/B de números</h2>
+        <p class="text-sm text-gray-600 mb-4">Cadastre múltiplos números de WhatsApp por site com um <strong>peso</strong> para cada um. O tráfego é distribuído aleatoriamente de forma proporcional ao peso.</p>
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-100">
+                <th class="text-left pb-2 font-medium">Número</th>
+                <th class="text-left pb-2 font-medium">Peso</th>
+                <th class="text-left pb-2 font-medium">% do tráfego</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-50">
+                <td class="py-2 pr-6 text-gray-600">Vendedor A</td>
+                <td class="py-2 pr-6 text-gray-600">70</td>
+                <td class="py-2 font-semibold text-wa">70%</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-6 text-gray-600">Vendedor B</td>
+                <td class="py-2 pr-6 text-gray-600">30</td>
+                <td class="py-2 font-semibold text-wa">30%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-sm text-gray-600">Se nenhum número A/B for cadastrado, o sistema usa o <strong>número padrão</strong> do site. A página de detalhes do site mostra cliques, conversões e taxa de conversão por número.</p>
+      </section>
+
+      <!-- 6. Registrar venda -->
+      <section id="registrar-venda" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">6. Registrar uma venda</h2>
+        <p class="text-sm text-gray-600 mb-3">Quando a venda ocorre, o cliente terá enviado na primeira mensagem algo como:</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 italic text-sm text-gray-600">
+          "Olá, vim pelo anúncio e quero saber mais! <strong>[WA-8F3K2P]</strong>"
+        </div>
+        <ol class="space-y-3 text-sm text-gray-600">
+          <li class="flex gap-3">
+            <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <span>Acesse <strong>Registrar Venda</strong> no menu superior.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <span>Digite o ID (ex: <code class="bg-gray-100 px-1 rounded text-xs">WA-8F3K2P</code>). O sistema mostrará os dados do clique original, incluindo se há <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code>.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+            <span>Informe o valor da venda e a moeda (padrão: BRL).</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+            <span>Clique em <strong>"Registrar Conversão no Facebook"</strong>. O evento Purchase é enviado ao CAPI com o valor e o <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> original.</span>
+          </li>
+        </ol>
+        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+          Cada ID pode ser convertido <strong>apenas uma vez</strong>. Tentativas de converter o mesmo ID novamente serão bloqueadas.
+        </div>
+      </section>
+
+      <!-- 7. Facebook CAPI -->
+      <section id="capi" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">7. Integração Facebook CAPI</h2>
+        <p class="text-sm text-gray-600 mb-4">O sistema usa a <strong>Conversions API (CAPI)</strong> do Facebook para enviar eventos diretamente do servidor, sem depender de cookies ou bloqueadores de anúncio no navegador do usuário.</p>
+
+        <h3 class="font-semibold text-gray-900 text-sm mb-3">Eventos enviados</h3>
+        <div class="space-y-3 mb-5">
+          <div class="flex gap-3 text-sm items-start">
+            <span class="shrink-0 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs font-medium mt-0.5">Lead</span>
+            <span class="text-gray-600">Disparado no clique do link de rastreamento. Usa <code class="bg-gray-100 px-1 rounded text-xs">event_id: lead_{ID}</code> para não colidir com o Purchase na deduplicação.</span>
+          </div>
+          <div class="flex gap-3 text-sm items-start">
+            <span class="shrink-0 px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium mt-0.5">Purchase</span>
+            <span class="text-gray-600">Disparado ao registrar a venda. Inclui o valor e moeda. Usa <code class="bg-gray-100 px-1 rounded text-xs">event_id: {ID}</code> para evitar contagem duplicada se o evento for enviado mais de uma vez.</span>
+          </div>
+        </div>
+
+        <h3 class="font-semibold text-gray-900 text-sm mb-3">Dados de correspondência enviados</h3>
+        <ul class="space-y-1.5 text-sm text-gray-600 mb-5">
+          <li class="flex gap-2"><code class="bg-gray-100 px-1 rounded text-xs shrink-0">fbc</code> <span>— formado a partir do <code class="bg-gray-100 px-1 rounded text-xs">fbclid</code> capturado no clique (permite o Facebook identificar o usuário e o anúncio).</span></li>
+          <li class="flex gap-2"><code class="bg-gray-100 px-1 rounded text-xs shrink-0">client_ip_address</code> <span>— IP do visitante no momento do clique.</span></li>
+          <li class="flex gap-2"><code class="bg-gray-100 px-1 rounded text-xs shrink-0">client_user_agent</code> <span>— navegador do visitante.</span></li>
+          <li class="flex gap-2"><code class="bg-gray-100 px-1 rounded text-xs shrink-0">event_source_url</code> <span>— URL da página de origem do clique.</span></li>
+        </ul>
+
+        <h3 class="font-semibold text-gray-900 text-sm mb-2">Onde verificar os eventos</h3>
+        <p class="text-sm text-gray-600">Os eventos aparecem em <strong>Gerenciador de Eventos → seu Pixel → aba "Visão geral"</strong>. Acesse a aba correta — a aba <em>"Eventos de teste"</em> só mostra eventos enviados com um código de teste ativo.</p>
+      </section>
+
+      <!-- 8. FAQ -->
+      <section id="faq" class="bg-white rounded-xl border border-gray-100 p-6 scroll-mt-20">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">8. Perguntas frequentes</h2>
+        <div class="space-y-2">
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>Funciona no iPhone (iOS / Safari)?</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <p class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">Sim. O redirecionamento é feito pelo servidor via HTTP 302, que o iOS Safari segue normalmente como qualquer link. Não é necessário JavaScript para o redirecionamento funcionar.</p>
+          </details>
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>E se o cliente vier sem fbclid (tráfego orgânico)?</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <p class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">O clique é registrado normalmente e o redirecionamento funciona. Ao registrar a venda, o evento Purchase é enviado sem o campo <code class="bg-gray-100 px-1 rounded text-xs">fbc</code>. O Facebook recebe o evento, mas sem match com um clique de anúncio — a conversão não será atribuída a uma campanha.</p>
+          </details>
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>Enviei a venda (verde) mas não aparece no painel do Facebook.</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3 space-y-2">
+              <p>Verifique em ordem:</p>
+              <ol class="list-decimal list-inside space-y-1">
+                <li>Está na aba <strong>"Visão geral"</strong>, não em "Eventos de teste".</li>
+                <li>O campo <strong>Código de evento de teste</strong> está vazio nas configurações do site — se preenchido, os eventos só aparecem na ferramenta de teste.</li>
+                <li>Aguarde alguns minutos — pode haver um pequeno delay no processamento.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>Captura parâmetros do Google Ads (gclid)?</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <p class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">Sim, o <code class="bg-gray-100 px-1 rounded text-xs">gclid</code> é salvo junto com todos os outros parâmetros de clique. O envio para a API de conversões do Google Ads ainda não está implementado — apenas o Facebook CAPI é suportado atualmente.</p>
+          </details>
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>Posso usar o mesmo Pixel em vários sites?</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <p class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">Sim. Basta configurar o mesmo Pixel ID e Token em cada site. Todos os eventos chegarão no mesmo pixel, diferenciados pela <code class="bg-gray-100 px-1 rounded text-xs">event_source_url</code> de cada clique.</p>
+          </details>
+
+          <details class="border border-gray-100 rounded-lg overflow-hidden">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-900 select-none list-none flex items-center justify-between">
+              <span>O ID de rastreamento não apareceu na mensagem do cliente.</span>
+              <span class="text-gray-400 text-xs">▼</span>
+            </summary>
+            <p class="px-4 pb-4 text-sm text-gray-600 border-t border-gray-100 pt-3">Isso ocorre quando o cliente edita a mensagem pré-preenchida antes de enviar. O clique ainda é registrado no sistema — só não é possível associar aquela conversa específica ao evento de clique.</p>
+          </details>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

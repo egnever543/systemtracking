@@ -159,4 +159,12 @@ dash.get('/conversoes/registrar', async (c) => {
   return c.html(html);
 });
 
+dash.get('/docs', async (c) => {
+  const user = c.get('user');
+  const html = render('docs.html', {
+    subscriptionBanner: await getSubscriptionBanner(user.userId),
+  });
+  return c.html(html);
+});
+
 export default dash;
