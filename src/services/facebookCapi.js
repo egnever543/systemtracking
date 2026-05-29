@@ -79,6 +79,8 @@ export async function sendLeadEvent(params) {
     return { success: false, response: {}, error: err.message };
   }
 }
+
+export async function sendPurchaseEvent(params) {
   const {
     pixelId,
     accessToken,
