@@ -80,6 +80,44 @@ export async function sendLeadEvent(params) {
   }
 }
 
+export async function sendConversionEvent(params) {
+  const {
+    pixelId, accessToken, testEventCode, trackingId, pageUrl,
+    fbclid, eventCreatedAt, ipOriginal, userAgent, eventName, value, currency,
+  } = params;
+
+  const userData = {};
+  if (ipOriginal) userData.client_ip_address = ipOriginal;
+  if (userAgent) userData.client_user_agent = userAgent;
+  if (fbclid) userData.fbc = formatFbc(fbclid, eventCreatedAt);
+
+  const eventData = {
+    event_name: eventName || 'Purchase',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: trackingId,
+    action_source: 'website',
+    event_source_url: pageUrl || undefined,
+    user_data: userData,
+  };
+
+  if (value && parseFloat(value) > 0) {
+    eventData.custom_data = { value: parseFloat(value), currency: currency || 'BRL' };
+  }
+
+  const payload = { data: [eventData] };
+  if (testEventCode) payload.test_event_code = testEventCode;
+
+  const url = `${CAPI_BASE}/${CAPI_VERSION}/${pixelId}/events?access_token=${accessToken}`;
+  try {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data?.error?.message || `Erro HTTP ${res.status}`, response: data };
+    return { success: true, response: data };
+  } catch (err) {
+    return { success: false, error: `Falha de conexão: ${err.message}`, response: {} };
+  }
+}
+
 export async function sendPurchaseEvent(params) {
   const {
     pixelId,

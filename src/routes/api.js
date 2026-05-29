@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
 import { mapSite, mapEvent, mapSiteNumber } from '../db/mappers.js';
-import { sendPurchaseEvent } from '../services/facebookCapi.js';
+import { sendPurchaseEvent, sendConversionEvent } from '../services/facebookCapi.js';
 import { sendGoogleConversion } from '../services/googleAdsCapi.js';
 import { sendTiktokConversion } from '../services/tiktokCapi.js';
 import { sendEmail, conversionEmailHtml } from '../services/email.js';
@@ -31,17 +31,19 @@ api.get('/events/lookup/:trackingId', async (c) => {
   });
 });
 
+const VALID_EVENTS = ['Purchase', 'Lead', 'InitiateCheckout', 'AddToCart', 'ViewContent'];
+
 api.post('/conversions', async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => null);
 
   if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
 
-  const { trackingId, value, currency } = body;
+  const { trackingId, value, currency, eventName = 'Purchase' } = body;
 
-  if (!trackingId || !value) {
-    return c.json({ erro: 'ID de rastreamento e valor são obrigatórios' }, 400);
-  }
+  if (!trackingId) return c.json({ erro: 'ID de rastreamento é obrigatório' }, 400);
+  if (!VALID_EVENTS.includes(eventName)) return c.json({ erro: 'Tipo de evento inválido' }, 400);
+  if (eventName === 'Purchase' && !value) return c.json({ erro: 'Valor é obrigatório para Venda' }, 400);
 
   const { data: rawEvent } = await supabase.from('events')
     .select('*')
@@ -63,8 +65,9 @@ api.post('/conversions', async (c) => {
 
   const gclid = rawEvent?.click_params?.gclid || null;
   const finalCurrency = currency || 'BRL';
+  const finalValue = value ? parseFloat(value) : 0;
 
-  const capiResult = await sendPurchaseEvent({
+  const capiResult = await sendConversionEvent({
     pixelId: site.fbPixelId,
     accessToken: site.fbAccessToken,
     testEventCode: site.fbTestEventCode || null,
@@ -74,63 +77,68 @@ api.post('/conversions', async (c) => {
     eventCreatedAt: event.createdAt,
     ipOriginal: event.ipOriginal,
     userAgent: event.userAgent,
-    value: parseFloat(value),
+    eventName,
+    value: finalValue,
     currency: finalCurrency,
   });
 
-  // Google Ads + TikTok: fire-and-forget
-  Promise.all([
-    sendGoogleConversion({
-      customerId: site.googleCustomerId,
-      conversionActionId: site.googleConversionActionId,
-      developerToken: site.googleDeveloperToken,
-      refreshToken: site.googleRefreshToken,
-      gclid,
-      conversionDateTime: event.createdAt,
-      value: parseFloat(value),
-      currency: finalCurrency,
-    }),
-    sendTiktokConversion({
-      pixelId: site.tiktokPixelId,
-      accessToken: site.tiktokAccessToken,
-      trackingId: event.trackingId,
-      pageUrl: event.pageUrl,
-      value: parseFloat(value),
-      currency: finalCurrency,
-    }),
-  ]).then(([gRes, ttRes]) => {
-    if (!gRes.skipped && !gRes.success) console.error('[google-capi]', gRes.error);
-    if (!ttRes.skipped && !ttRes.success) console.error('[tiktok-capi]', ttRes.error);
-  }).catch(() => {});
+  // Google Ads + TikTok: somente para Purchase, fire-and-forget
+  if (eventName === 'Purchase') {
+    Promise.all([
+      sendGoogleConversion({
+        customerId: site.googleCustomerId,
+        conversionActionId: site.googleConversionActionId,
+        developerToken: site.googleDeveloperToken,
+        refreshToken: site.googleRefreshToken,
+        gclid,
+        conversionDateTime: event.createdAt,
+        value: finalValue,
+        currency: finalCurrency,
+      }),
+      sendTiktokConversion({
+        pixelId: site.tiktokPixelId,
+        accessToken: site.tiktokAccessToken,
+        trackingId: event.trackingId,
+        pageUrl: event.pageUrl,
+        value: finalValue,
+        currency: finalCurrency,
+      }),
+    ]).then(([gRes, ttRes]) => {
+      if (!gRes.skipped && !gRes.success) console.error('[google-capi]', gRes.error);
+      if (!ttRes.skipped && !ttRes.success) console.error('[tiktok-capi]', ttRes.error);
+    }).catch(() => {});
+  }
 
   const convId = randomUUID();
   await supabase.from('conversions').insert({
     id: convId,
     event_id: event.id,
     site_id: event.siteId,
-    value: parseFloat(value),
+    value: finalValue,
     currency: finalCurrency,
     registered_by: user.userId,
     fb_response: JSON.stringify(capiResult.response),
     fb_sent_at: new Date().toISOString(),
   });
 
-  // Email de notificação para o dono do site (fire-and-forget)
-  supabase.from('users').select('email, name').eq('id', rawSite.user_id).maybeSingle()
-    .then(({ data: owner }) => {
-      if (owner) {
-        return sendEmail({
-          to: owner.email,
-          subject: `💰 Nova venda — ${event.trackingId}`,
-          html: conversionEmailHtml({
-            siteName: site.name,
-            trackingId: event.trackingId,
-            value: parseFloat(value),
-            currency: finalCurrency,
-          }),
-        });
-      }
-    }).catch(() => {});
+  // Email de notificação somente para Purchase
+  if (eventName === 'Purchase') {
+    supabase.from('users').select('email, name').eq('id', rawSite.user_id).maybeSingle()
+      .then(({ data: owner }) => {
+        if (owner) {
+          return sendEmail({
+            to: owner.email,
+            subject: `💰 Nova venda — ${event.trackingId}`,
+            html: conversionEmailHtml({
+              siteName: site.name,
+              trackingId: event.trackingId,
+              value: finalValue,
+              currency: finalCurrency,
+            }),
+          });
+        }
+      }).catch(() => {});
+  }
 
   if (!capiResult.success) {
     return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, { status: 207 });
