@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import apiRoutes from './routes/api.js';
 import trackerRoutes from './routes/tracker.js';
 import billingRoutes, { webhookHandler } from './routes/billing.js';
+import faturasRoutes from './routes/faturas.js';
 
 const app = new Hono();
 
@@ -44,6 +45,10 @@ app.post('/webhook/mp', webhookHandler);
 // Billing (protegido)
 app.use('/billing/*', requireAuth);
 app.route('/billing', billingRoutes);
+
+// Faturas PIX via FastDePix (protegido)
+app.use('/faturas/*', requireAuth);
+app.route('/faturas', faturasRoutes);
 
 const port = parseInt(process.env.PORT || '3000');
 console.log(`🚀 WA CAPI Tracker rodando na porta ${port}`);
