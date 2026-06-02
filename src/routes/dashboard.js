@@ -113,7 +113,13 @@ dash.get('/sites/:siteId', async (c) => {
 
   const html = render('sites/detail.html', {
     userName: user.name,
-    siteJSON: JSON.stringify({ ...site, fbAccessToken: '***' }),
+    siteJSON: JSON.stringify({
+      ...site,
+      fbAccessToken: '***',
+      googleDeveloperToken: undefined,
+      googleRefreshToken: undefined,
+      googleConectado: !!site.googleRefreshToken,
+    }),
     siteId: site.id,
     siteName: site.name,
     snippet,
@@ -175,6 +181,86 @@ dash.get('/docs', async (c) => {
     subscriptionBanner: await getSubscriptionBanner(user.userId),
   });
   return c.html(html);
+});
+
+dash.get('/google/connect', async (c) => {
+  const user = c.get('user');
+  const siteId = c.req.query('siteId');
+  if (!siteId) return c.redirect('/dashboard/sites');
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.redirect('/dashboard/sites');
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return c.html('<p style="font-family:sans-serif;padding:2rem">❌ <b>GOOGLE_CLIENT_ID</b> não configurado no servidor.</p>', 500);
+
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: `${baseUrl}/dashboard/google/callback`,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/adwords',
+    access_type: 'offline',
+    prompt: 'consent',
+    state: siteId,
+  });
+
+  return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+});
+
+dash.get('/google/callback', async (c) => {
+  const user = c.get('user');
+  const { code, state: siteId, error } = c.req.query();
+
+  if (error || !code || !siteId) {
+    return c.redirect('/dashboard/sites?erro=Google+negou+o+acesso');
+  }
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.redirect('/dashboard/sites');
+
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+      redirect_uri: `${baseUrl}/dashboard/google/callback`,
+      grant_type: 'authorization_code',
+    }),
+  });
+
+  const tokenData = await tokenRes.json();
+
+  if (!tokenRes.ok || !tokenData.refresh_token) {
+    console.error('[google-oauth]', tokenData);
+    return c.redirect(`/dashboard/sites/${siteId}?erro=google`);
+  }
+
+  await supabase.from('sites')
+    .update({ google_refresh_token: tokenData.refresh_token })
+    .eq('id', siteId);
+
+  return c.redirect(`/dashboard/sites/${siteId}?google=conectado`);
+});
+
+dash.post('/google/disconnect', async (c) => {
+  const user = c.get('user');
+  const body = await c.req.parseBody();
+  const siteId = body.siteId;
+  if (!siteId) return c.redirect('/dashboard/sites');
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.redirect('/dashboard/sites');
+
+  await supabase.from('sites').update({ google_refresh_token: null }).eq('id', siteId);
+  return c.redirect(`/dashboard/sites/${siteId}`);
 });
 
 dash.get('/settings', async (c) => {

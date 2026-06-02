@@ -88,7 +88,7 @@ api.post('/conversions', async (c) => {
       sendGoogleConversion({
         customerId: site.googleCustomerId,
         conversionActionId: site.googleConversionActionId,
-        developerToken: site.googleDeveloperToken,
+        developerToken: process.env.GOOGLE_DEVELOPER_TOKEN || site.googleDeveloperToken,
         refreshToken: site.googleRefreshToken,
         gclid,
         conversionDateTime: event.createdAt,
