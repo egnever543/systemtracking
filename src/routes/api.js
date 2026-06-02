@@ -14,7 +14,7 @@ api.get('/events/lookup/:trackingId', async (c) => {
   const id = trackingId.toUpperCase().trim();
 
   const { data: raw } = await supabase.from('events')
-    .select('id, tracking_id, site_id, fbclid, page_url, created_at')
+    .select('id, tracking_id, site_id, fbclid, page_url, click_params, created_at')
     .eq('tracking_id', id)
     .maybeSingle();
 

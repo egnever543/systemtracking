@@ -112,6 +112,12 @@
                      :class="eventoEncontrado.fbclid ? 'text-green-700' : 'text-orange-500'"
                      x-text="eventoEncontrado.fbclid ? 'Presente ✓' : 'Ausente'"></p>
                 </div>
+                <div>
+                  <p class="text-xs text-gray-400">gclid (Google)</p>
+                  <p class="text-xs font-semibold mt-0.5"
+                     :class="eventoEncontrado.clickParams?.gclid ? 'text-green-700' : 'text-orange-500'"
+                     x-text="eventoEncontrado.clickParams?.gclid ? 'Presente ✓' : 'Ausente'"></p>
+                </div>
               </div>
             </div>
           </template>
@@ -202,7 +208,7 @@
               @click="registrar()"
               :disabled="enviando || !trackingId || (eventoAtual && eventoAtual.precisaValor && !value)"
               class="w-full bg-wa hover:bg-wa-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
-              <span x-show="!enviando">Registrar <span x-text="eventoAtual ? eventoAtual.label : ''"></span> no Facebook</span>
+              <span x-show="!enviando" x-text="textoBotao"></span>
               <span x-show="enviando">Enviando...</span>
             </button>
 
@@ -237,6 +243,17 @@
 
         get eventoAtual() {
           return TIPOS_EVENTO.find(e => e.value === this.eventoSelecionado) || null;
+        },
+
+        get textoBotao() {
+          const label = this.eventoAtual?.label || 'Evento';
+          const ev = this.eventoEncontrado;
+          if (!ev) return `Registrar ${label}`;
+          const plats = [];
+          if (ev.fbclid) plats.push('Facebook');
+          if (ev.clickParams?.gclid) plats.push('Google');
+          if (plats.length === 0) return `Registrar ${label}`;
+          return `Registrar ${label} no ${plats.join(' e ')}`;
         },
 
         init() {
