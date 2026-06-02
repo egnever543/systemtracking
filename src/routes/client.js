@@ -220,27 +220,35 @@ client.post('/:token/api/conversions', resolveToken, async (c) => {
   const { data: jaExiste } = await supabase.from('conversions').select('id').eq('event_id', event.id).maybeSingle();
   if (jaExiste) return c.json({ erro: 'Este ID já foi convertido anteriormente' }, 409);
 
-  if (!site.fbPixelId || !site.fbAccessToken) {
+  const gclid = rawEvent?.click_params?.gclid || null;
+  const hasFbclid = !!event.fbclid;
+  const hasGclid = !!gclid;
+  const enviarFacebook = hasFbclid || !hasGclid;
+
+  if (enviarFacebook && (!site.fbPixelId || !site.fbAccessToken)) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
   }
 
   const finalCurrency = currency || 'BRL';
   const finalValue = value ? parseFloat(value) : 0;
 
-  const capiResult = await sendConversionEvent({
-    pixelId: site.fbPixelId,
-    accessToken: site.fbAccessToken,
-    testEventCode: site.fbTestEventCode || null,
-    trackingId: event.trackingId,
-    pageUrl: event.pageUrl,
-    fbclid: event.fbclid,
-    eventCreatedAt: event.createdAt,
-    ipOriginal: event.ipOriginal,
-    userAgent: event.userAgent,
-    eventName,
-    value: finalValue,
-    currency: finalCurrency,
-  });
+  let capiResult = { success: true, response: {}, skipped: !enviarFacebook };
+  if (enviarFacebook) {
+    capiResult = await sendConversionEvent({
+      pixelId: site.fbPixelId,
+      accessToken: site.fbAccessToken,
+      testEventCode: site.fbTestEventCode || null,
+      trackingId: event.trackingId,
+      pageUrl: event.pageUrl,
+      fbclid: event.fbclid,
+      eventCreatedAt: event.createdAt,
+      ipOriginal: event.ipOriginal,
+      userAgent: event.userAgent,
+      eventName,
+      value: finalValue,
+      currency: finalCurrency,
+    });
+  }
 
   const convId = randomUUID();
   await supabase.from('conversions').insert({
@@ -249,11 +257,11 @@ client.post('/:token/api/conversions', resolveToken, async (c) => {
     site_id: event.siteId,
     value: finalValue,
     currency: finalCurrency,
-    fb_response: JSON.stringify(capiResult.response),
-    fb_sent_at: new Date().toISOString(),
+    fb_response: capiResult.skipped ? null : JSON.stringify(capiResult.response),
+    fb_sent_at: capiResult.skipped ? null : new Date().toISOString(),
   });
 
-  if (!capiResult.success) {
+  if (!capiResult.skipped && !capiResult.success) {
     return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, 207);
   }
 

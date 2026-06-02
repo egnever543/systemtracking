@@ -59,28 +59,37 @@ api.post('/conversions', async (c) => {
   const { data: rawSite } = await supabase.from('sites').select('*').eq('id', event.siteId).maybeSingle();
   const site = mapSite(rawSite);
 
-  if (!site?.fbPixelId || !site?.fbAccessToken) {
+  const gclid = rawEvent?.click_params?.gclid || null;
+  const hasFbclid = !!event.fbclid;
+  const hasGclid = !!gclid;
+
+  // Envia para Facebook se: tem fbclid OU não tem sinal do Google (direto/utm)
+  const enviarFacebook = hasFbclid || !hasGclid;
+
+  if (enviarFacebook && (!site?.fbPixelId || !site?.fbAccessToken)) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
   }
 
-  const gclid = rawEvent?.click_params?.gclid || null;
   const finalCurrency = currency || 'BRL';
   const finalValue = value ? parseFloat(value) : 0;
 
-  const capiResult = await sendConversionEvent({
-    pixelId: site.fbPixelId,
-    accessToken: site.fbAccessToken,
-    testEventCode: site.fbTestEventCode || null,
-    trackingId: event.trackingId,
-    pageUrl: event.pageUrl,
-    fbclid: event.fbclid,
-    eventCreatedAt: event.createdAt,
-    ipOriginal: event.ipOriginal,
-    userAgent: event.userAgent,
-    eventName,
-    value: finalValue,
-    currency: finalCurrency,
-  });
+  let capiResult = { success: true, response: {}, skipped: !enviarFacebook };
+  if (enviarFacebook) {
+    capiResult = await sendConversionEvent({
+      pixelId: site.fbPixelId,
+      accessToken: site.fbAccessToken,
+      testEventCode: site.fbTestEventCode || null,
+      trackingId: event.trackingId,
+      pageUrl: event.pageUrl,
+      fbclid: event.fbclid,
+      eventCreatedAt: event.createdAt,
+      ipOriginal: event.ipOriginal,
+      userAgent: event.userAgent,
+      eventName,
+      value: finalValue,
+      currency: finalCurrency,
+    });
+  }
 
   // Google Ads + TikTok: somente para Purchase, fire-and-forget
   if (eventName === 'Purchase') {
@@ -117,8 +126,8 @@ api.post('/conversions', async (c) => {
     value: finalValue,
     currency: finalCurrency,
     registered_by: user.userId,
-    fb_response: JSON.stringify(capiResult.response),
-    fb_sent_at: new Date().toISOString(),
+    fb_response: capiResult.skipped ? null : JSON.stringify(capiResult.response),
+    fb_sent_at: capiResult.skipped ? null : new Date().toISOString(),
   });
 
   // Email de notificação somente para Purchase
@@ -140,7 +149,7 @@ api.post('/conversions', async (c) => {
       }).catch(() => {});
   }
 
-  if (!capiResult.success) {
+  if (!capiResult.skipped && !capiResult.success) {
     return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, { status: 207 });
   }
 
