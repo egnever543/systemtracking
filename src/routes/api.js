@@ -60,11 +60,8 @@ api.post('/conversions', async (c) => {
   const site = mapSite(rawSite);
 
   const gclid = rawEvent?.click_params?.gclid || null;
-  const hasFbclid = !!event.fbclid;
-  const hasGclid = !!gclid;
-
-  // Envia para Facebook se: tem fbclid OU não tem sinal do Google (direto/utm)
-  const enviarFacebook = hasFbclid || !hasGclid;
+  const enviarFacebook = !!event.fbclid;
+  const enviarGoogle = !!gclid;
 
   if (enviarFacebook && (!site?.fbPixelId || !site?.fbAccessToken)) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
@@ -73,7 +70,7 @@ api.post('/conversions', async (c) => {
   const finalCurrency = currency || 'BRL';
   const finalValue = value ? parseFloat(value) : 0;
 
-  let capiResult = { success: true, response: {}, skipped: !enviarFacebook };
+  let capiResult = { success: true, response: {}, skipped: true };
   if (enviarFacebook) {
     capiResult = await sendConversionEvent({
       pixelId: site.fbPixelId,
@@ -91,8 +88,8 @@ api.post('/conversions', async (c) => {
     });
   }
 
-  // Google Ads + TikTok: somente para Purchase, fire-and-forget
-  if (eventName === 'Purchase') {
+  // Google Ads + TikTok: somente para Purchase e se veio do Google, fire-and-forget
+  if (eventName === 'Purchase' && enviarGoogle) {
     Promise.all([
       sendGoogleConversion({
         customerId: site.googleCustomerId,

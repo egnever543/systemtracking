@@ -221,9 +221,7 @@ client.post('/:token/api/conversions', resolveToken, async (c) => {
   if (jaExiste) return c.json({ erro: 'Este ID já foi convertido anteriormente' }, 409);
 
   const gclid = rawEvent?.click_params?.gclid || null;
-  const hasFbclid = !!event.fbclid;
-  const hasGclid = !!gclid;
-  const enviarFacebook = hasFbclid || !hasGclid;
+  const enviarFacebook = !!event.fbclid;
 
   if (enviarFacebook && (!site.fbPixelId || !site.fbAccessToken)) {
     return c.json({ erro: 'Site sem Pixel ID ou Token da API configurados' }, 422);
@@ -232,7 +230,7 @@ client.post('/:token/api/conversions', resolveToken, async (c) => {
   const finalCurrency = currency || 'BRL';
   const finalValue = value ? parseFloat(value) : 0;
 
-  let capiResult = { success: true, response: {}, skipped: !enviarFacebook };
+  let capiResult = { success: true, response: {}, skipped: true };
   if (enviarFacebook) {
     capiResult = await sendConversionEvent({
       pixelId: site.fbPixelId,
