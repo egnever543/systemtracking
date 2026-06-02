@@ -70,14 +70,14 @@ dash.get('/sites/novo', async (c) => {
 dash.post('/sites/novo', async (c) => {
   const user = c.get('user');
   const body = await c.req.parseBody();
-  const { name, domain, whatsapp_number, default_message, fb_pixel_id, fb_access_token, fb_test_event_code } = body;
+  const { name, domain, whatsapp_number, default_message } = body;
 
   if (!name || !domain || !whatsapp_number) {
-    return c.redirect('/dashboard/sites/novo?erro=Preencha+os+campos+obrigatórios');
+    return c.redirect('/dashboard/sites/novo?erro=Preencha+os+campos+obrigat%C3%B3rios');
   }
 
   const id = randomUUID();
-  await supabase.from('sites').insert({
+  const { error } = await supabase.from('sites').insert({
     id,
     user_id: user.userId,
     name,
@@ -89,11 +89,14 @@ dash.post('/sites/novo', async (c) => {
     fb_test_event_code: body.fb_test_event_code || null,
     google_customer_id: body.google_customer_id || null,
     google_conversion_action_id: body.google_conversion_action_id || null,
-    google_developer_token: body.google_developer_token || null,
-    google_refresh_token: body.google_refresh_token || null,
     tiktok_pixel_id: body.tiktok_pixel_id || null,
     tiktok_access_token: body.tiktok_access_token || null,
   });
+
+  if (error) {
+    console.error('[criar-site]', error);
+    return c.redirect(`/dashboard/sites/novo?erro=${encodeURIComponent('Erro ao criar site: ' + error.message)}`);
+  }
 
   return c.redirect(`/dashboard/sites/${id}`);
 });
