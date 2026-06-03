@@ -212,16 +212,20 @@ api.post('/conversions', async (c) => {
   }
 
   const convId = randomUUID();
-  await supabase.from('conversions').insert({
+  const { error: insertErr } = await supabase.from('conversions').insert({
     id: convId,
     event_id: event.id,
     site_id: event.siteId,
     value: finalValue,
     currency: finalCurrency,
-    registered_by: user.userId,
     fb_response: capiResult.skipped ? null : JSON.stringify(capiResult.response),
     fb_sent_at: capiResult.skipped ? null : new Date().toISOString(),
   });
+
+  if (insertErr) {
+    console.error('[POST /api/conversions] insert error:', insertErr);
+    return c.json({ erro: 'Erro ao salvar conversão: ' + insertErr.message }, 500);
+  }
 
   // Email de notificação somente para Purchase
   if (eventName === 'Purchase') {
