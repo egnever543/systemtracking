@@ -674,6 +674,52 @@
       };
     }
 
+    function presellEditor() {
+      const d = SITE_DATA;
+      return {
+        enabled: d.presellEnabled || false,
+        title: d.presellTitle || '',
+        subtitle: d.presellSubtitle || '',
+        bullets: Array.isArray(d.presellBullets) ? [...d.presellBullets] : [],
+        ctaText: d.presellCtaText || 'Falar no WhatsApp',
+        bgColor: d.presellBgColor || '#0f172a',
+        accentColor: d.presellAccentColor || '#25D366',
+        salvando: false,
+        msg: '',
+        msgOk: true,
+        get previewUrl() { return `/t/r/{{siteId}}`; },
+        init() {},
+        addBullet() { if (this.bullets.length < 6) this.bullets.push(''); },
+        removeBullet(i) { this.bullets.splice(i, 1); },
+        async toggleEnabled() {
+          this.enabled = !this.enabled;
+          await this.salvar();
+        },
+        async salvar() {
+          this.salvando = true;
+          this.msg = '';
+          const res = await fetch(`/api/sites/${SITE_ID}/presell`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              enabled: this.enabled,
+              title: this.title,
+              subtitle: this.subtitle,
+              bullets: this.bullets,
+              ctaText: this.ctaText,
+              bgColor: this.bgColor,
+              accentColor: this.accentColor,
+            }),
+          });
+          const data = await res.json();
+          this.salvando = false;
+          this.msgOk = res.ok;
+          this.msg = res.ok ? '✅ Salvo!' : (data.erro || 'Erro ao salvar');
+          setTimeout(() => { this.msg = ''; }, 2500);
+        },
+      };
+    }
+
     function clientPortal() {
       return {
         token: SITE_DATA.clientToken || null,
