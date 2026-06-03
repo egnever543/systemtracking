@@ -9,6 +9,73 @@ import { randomUUID, createHash, randomBytes } from 'crypto';
 
 const api = new Hono();
 
+api.get('/conversions', async (c) => {
+  const user = c.get('user');
+  const limit = Math.min(100, Math.max(5, parseInt(c.req.query('limit') || '25')));
+  const offset = Math.max(0, parseInt(c.req.query('offset') || '0'));
+  const filterSite = c.req.query('siteId') || null;
+  const days = c.req.query('days') ? parseInt(c.req.query('days')) : null;
+
+  const { data: userSites } = await supabase.from('sites').select('id, name').eq('user_id', user.userId);
+  const siteIds = (userSites || []).map(s => s.id);
+  const siteNames = Object.fromEntries((userSites || []).map(s => [s.id, s.name]));
+  if (siteIds.length === 0) return c.json({ items: [], total: 0, sites: [] });
+
+  const targetIds = filterSite && siteIds.includes(filterSite) ? [filterSite] : siteIds;
+
+  let countQ = supabase.from('conversions').select('*', { count: 'exact', head: true }).in('site_id', targetIds);
+  let dataQ = supabase.from('conversions')
+    .select('id, event_id, site_id, value, currency, fb_sent_at, created_at')
+    .in('site_id', targetIds)
+    .order('created_at', { ascending: false });
+
+  if (days) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString();
+    countQ = countQ.gte('created_at', sinceStr);
+    dataQ = dataQ.gte('created_at', sinceStr);
+  }
+
+  const [{ count: total }, { data: rows }] = await Promise.all([
+    countQ,
+    dataQ.range(offset, offset + limit - 1),
+  ]);
+
+  const eventIds = (rows || []).map(r => r.event_id).filter(Boolean);
+  let evMap = {};
+  if (eventIds.length > 0) {
+    const { data: evRows } = await supabase.from('events')
+      .select('id, tracking_id, fbclid, click_params, page_url, selected_number, created_at')
+      .in('id', eventIds);
+    for (const ev of (evRows || [])) evMap[ev.id] = ev;
+  }
+
+  return c.json({
+    sites: (userSites || []).map(s => ({ id: s.id, name: s.name })),
+    total: total || 0,
+    items: (rows || []).map(r => {
+      const ev = evMap[r.event_id] || {};
+      return {
+        id: r.id,
+        siteId: r.site_id,
+        siteName: siteNames[r.site_id] || '—',
+        value: r.value,
+        currency: r.currency,
+        fbSentAt: r.fb_sent_at,
+        createdAt: r.created_at,
+        trackingId: ev.tracking_id || null,
+        fbclid: ev.fbclid || null,
+        gclid: ev.click_params?.gclid || null,
+        utmSource: ev.click_params?.utm_source || null,
+        pageUrl: ev.page_url || null,
+        selectedNumber: ev.selected_number || null,
+        clickAt: ev.created_at || null,
+      };
+    }),
+  });
+});
+
 api.get('/events/lookup/:trackingId', async (c) => {
   const { trackingId } = c.req.param();
   const id = trackingId.toUpperCase().trim();
