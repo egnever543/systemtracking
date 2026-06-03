@@ -35,13 +35,15 @@
   </nav>
   {{subscriptionBanner}}
   <main class="max-w-4xl mx-auto px-4 py-6" x-data="detailPage()" x-init="init()">
-    <div class="mb-6">
+
+    <!-- Header -->
+    <div class="mb-5">
       <a href="/dashboard/sites" class="text-sm text-gray-500 hover:text-gray-700">← Voltar para Sites</a>
       <div class="flex items-center justify-between mt-2">
         <h1 class="text-xl font-bold text-gray-900">{{siteName}}</h1>
         <a href="/dashboard/conversoes/registrar?site={{siteId}}"
            class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          Registrar Venda deste Site
+          Registrar Venda
         </a>
       </div>
     </div>
@@ -59,571 +61,599 @@
       }
     </script>
 
-    <!-- Link de Rastreamento -->
-    <div class="bg-white rounded-xl border border-wa/30 p-5 mb-5" x-data="{ copiado: false }">
-      <h2 class="font-semibold text-gray-900 mb-1">Link de Rastreamento</h2>
-      <p class="text-sm text-gray-500 mb-3">Use este link diretamente nos botões do WhatsApp. Funciona em todos os dispositivos, incluindo iPhone:</p>
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
-        <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{redirectUrl}}</code>
-        <button @click="navigator.clipboard.writeText('{{redirectUrl}}').then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
-          class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
-          <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
-        </button>
-      </div>
-      <p class="text-xs text-gray-400 mt-2">Para capturar parâmetros de anúncio automaticamente (fbclid, gclid, utm_* etc.), instale o snippet abaixo na página.</p>
+    <!-- Tab Navigation -->
+    <div class="flex gap-0 mb-6 border-b border-gray-200">
+      <button @click="aba = 'relatorios'"
+              :class="aba === 'relatorios' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
+              class="px-5 py-2.5 text-sm -mb-px transition-colors">
+        Relatórios
+      </button>
+      <button @click="aba = 'ferramentas'"
+              :class="aba === 'ferramentas' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
+              class="px-5 py-2.5 text-sm -mb-px transition-colors">
+        Ferramentas
+      </button>
+      <button @click="aba = 'configuracoes'"
+              :class="aba === 'configuracoes' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
+              class="px-5 py-2.5 text-sm -mb-px transition-colors">
+        Configurações
+      </button>
     </div>
 
-    <!-- Snippet -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="{ copiado: false }">
-      <h2 class="font-semibold text-gray-900 mb-1">Snippet <span class="text-xs font-normal text-gray-400">(opcional — para tráfego pago)</span></h2>
-      <p class="text-sm text-gray-500 mb-3">Cole antes do <code class="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code>. Copia automaticamente qualquer parâmetro da URL da página para o link de rastreamento:</p>
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
-        <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{snippet}}</code>
-        <button @click="navigator.clipboard.writeText(`<script src='{{baseUrl}}/tracker.js' data-site='{{siteId}}' async><\/script>`).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
-          class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
-          <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
-        </button>
-      </div>
-    </div>
+    <!-- ===== TAB: RELATÓRIOS ===== -->
+    <div x-show="aba === 'relatorios'">
 
-    <!-- Gráfico de Cliques -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
-      <h2 class="font-semibold text-gray-900 mb-4">Desempenho (30 dias)</h2>
-      <canvas id="graficoCliques"></canvas>
-    </div>
-
-    <!-- Distribuição de Números -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="numbersManager()">
-      <div class="mb-4">
-        <h2 class="font-semibold text-gray-900">Distribuição de Números WhatsApp</h2>
-        <p class="text-xs text-gray-400 mt-0.5">Distribua o tráfego entre múltiplos números. Se nenhum for cadastrado, usa o número padrão do site.</p>
+      <!-- Gráfico de Cliques -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Desempenho (30 dias)</h2>
+        <canvas id="graficoCliques"></canvas>
       </div>
 
-      <template x-if="numeros.length > 0">
-        <div class="overflow-x-auto mb-4">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-gray-500 border-b border-gray-100">
-                <th class="text-left pb-2 font-medium">Label</th>
-                <th class="text-left pb-2 font-medium">Número</th>
-                <th class="text-left pb-2 font-medium">Peso</th>
-                <th class="text-left pb-2 font-medium">% Real</th>
-                <th class="text-left pb-2 font-medium">Cliques</th>
-                <th class="text-left pb-2 font-medium">Conversões</th>
-                <th class="text-left pb-2 font-medium">Taxa</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="n in numeros" :key="n.id">
-                <tr class="border-b border-gray-50">
-                  <td class="py-2 pr-4 text-gray-600" x-text="n.label || '—'"></td>
-                  <td class="py-2 pr-4"><code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="n.number"></code></td>
-                  <td class="py-2 pr-4 text-gray-600" x-text="n.weight"></td>
-                  <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="calcPercent(n.weight) + '%'"></span></td>
-                  <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).cliques"></td>
-                  <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).conversoes"></td>
-                  <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="getStats(n.number).taxa + '%'"></span></td>
-                  <td class="py-2"><button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button></td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
+      <!-- Conversões do Site -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="conversoesSite()" x-init="init()">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-semibold text-gray-900">Conversões Registradas</h2>
+            <p class="text-xs text-gray-400 mt-0.5" x-text="totalConversoes > 0 ? `${totalConversoes} conversão(ões) — Total: R$ ${totalValor}` : 'Nenhuma conversão registrada ainda.'"></p>
+          </div>
+          <div class="flex items-center gap-3">
+            <select x-model="periodo" @change="pagina = 1; carregar()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
+              <option value="">Todos</option>
+              <option value="7">7 dias</option>
+              <option value="30">30 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+          </div>
         </div>
-      </template>
 
-      <template x-if="numeros.length === 0">
-        <p class="text-sm text-gray-400 mb-4">Nenhum número configurado — usando o número padrão do site.</p>
-      </template>
-
-      <form @submit.prevent="adicionar" class="flex gap-2 flex-wrap items-end">
-        <div class="flex-1 min-w-[120px]">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
-          <input x-model="novo.label" type="text" placeholder="Ex: Vendedor A"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-        </div>
-        <div class="flex-1 min-w-[150px]">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Número <span class="text-red-400">*</span></label>
-          <input x-model="novo.number" type="text" placeholder="5511999990000" required
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-        </div>
-        <div class="w-24">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Peso</label>
-          <input x-model="novo.weight" type="number" min="1" placeholder="50"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-        </div>
-        <button type="submit" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          + Adicionar
-        </button>
-      </form>
-    </div>
-
-    <!-- Edição do site -->
-    <details class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
-      <summary class="font-semibold text-gray-900 cursor-pointer select-none">Configurações do Site</summary>
-      <form method="POST" action="/dashboard/sites/{{siteId}}/editar" class="mt-4 space-y-4">
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Nome</label>
-            <input type="text" name="name" required value="{{siteName}}"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Domínio</label>
-            <input type="text" name="domain" required :value="site.domain"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
-            <input type="text" name="whatsapp_number" required :value="site.whatsappNumber"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Pixel ID</label>
-            <input type="text" name="fb_pixel_id" :value="site.fbPixelId"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Token da API <small class="text-gray-400">(deixe em branco para manter)</small></label>
-            <input type="password" name="fb_access_token" placeholder="••••••••"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Código de teste</label>
-            <input type="text" name="fb_test_event_code" :value="site.fbTestEventCode"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-
-          <div class="col-span-2 pt-2">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Google Ads CAPI</p>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Customer ID</label>
-            <input type="text" name="google_customer_id" :value="site.googleCustomerId" placeholder="1234567890"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Conversion Action ID
-              <span class="font-normal text-gray-400 normal-case">(nº na URL da conversão)</span>
-            </label>
-            <input type="text" name="google_conversion_action_id" :value="site.googleConversionActionId" placeholder="987654321"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div class="col-span-2">
-            <template x-if="site.googleConectado">
-              <div class="flex items-center justify-between px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  <span class="text-sm font-medium text-green-800">Conta Google conectada</span>
-                </div>
-                <form method="POST" action="/dashboard/google/disconnect">
-                  <input type="hidden" name="siteId" value="{{siteId}}">
-                  <button type="submit" class="text-xs text-red-400 hover:text-red-600 transition-colors">Desconectar</button>
-                </form>
-              </div>
-            </template>
-            <template x-if="!site.googleConectado">
-              <a href="/dashboard/google/connect?siteId={{siteId}}"
-                 class="inline-flex items-center gap-2.5 px-4 py-2.5 border border-gray-300 hover:border-gray-400 rounded-lg text-sm text-gray-700 transition-colors">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                Conectar com Google
-              </a>
+        <template x-if="carregando">
+          <div class="space-y-2 py-2">
+            <template x-for="i in [1,2,3,4]" :key="i">
+              <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
             </template>
           </div>
+        </template>
 
-          <div class="col-span-2 pt-2">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">TikTok Pixel</p>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Pixel ID</label>
-            <input type="text" name="tiktok_pixel_id" :value="site.tiktokPixelId" placeholder="CXXXXXXXXXXXXXX"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Access Token <small class="text-gray-400">(branco = manter)</small></label>
-            <input type="password" name="tiktok_access_token" placeholder="••••••••"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">Mensagem padrão</label>
-          <textarea name="default_message" rows="2" x-text="site.defaultMessage"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
-        </div>
-        <button type="submit" class="bg-wa hover:bg-wa-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">
-          Salvar alterações
-        </button>
-      </form>
-    </details>
+        <template x-if="!carregando && totalConversoes === 0">
+          <p class="text-sm text-gray-400 py-2">Nenhuma conversão registrada neste período.</p>
+        </template>
 
-    <!-- Página de Pré-Venda -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5"
-         x-data="presellEditor()" x-init="init()">
-      <div class="flex items-center justify-between mb-1">
-        <div>
-          <h2 class="font-semibold text-gray-900">Página de Pré-Venda</h2>
-          <p class="text-xs text-gray-400 mt-0.5">Exibe uma página personalizada antes de ir ao WhatsApp — ideal para anúncios.</p>
-        </div>
-        <button @click="toggleEnabled()"
-          :class="enabled ? 'bg-wa' : 'bg-gray-200'"
-          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
-          <span :class="enabled ? 'translate-x-6' : 'translate-x-1'"
-                class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
-        </button>
+        <template x-if="!carregando && totalConversoes > 0">
+          <div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-gray-100">
+                    <th class="text-left pb-2 font-medium">Código</th>
+                    <th class="text-left pb-2 font-medium">Horário</th>
+                    <th class="text-left pb-2 font-medium">Origem</th>
+                    <th class="text-left pb-2 font-medium">Valor</th>
+                    <th class="text-left pb-2 font-medium hidden md:table-cell">Atendente</th>
+                    <th class="text-left pb-2 font-medium hidden md:table-cell">Plataforma</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="cv in conversoes" :key="cv.id">
+                    <tr>
+                      <td colspan="7" class="py-0">
+                        <div class="border-b border-gray-50">
+                          <div class="flex items-center gap-2 py-2 cursor-pointer hover:bg-gray-50 px-1 rounded"
+                               @click="cv._aberto = !cv._aberto">
+                            <span class="text-xs text-gray-400 transition-transform" :class="cv._aberto ? 'rotate-90' : ''" style="display:inline-block">▶</span>
+                            <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono w-24 shrink-0" x-text="cv.trackingId || '—'"></code>
+                            <span class="text-gray-600 text-xs whitespace-nowrap" x-text="formatDate(cv.createdAt)"></span>
+                            <span class="flex-1"></span>
+                            <span x-show="cv.utmSource" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded hidden sm:inline" x-text="cv.utmSource"></span>
+                            <span x-show="!cv.utmSource && cv.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded hidden sm:inline">Facebook</span>
+                            <span x-show="!cv.utmSource && cv.gclid && !cv.fbclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded hidden sm:inline">Google</span>
+                            <span x-show="!cv.utmSource && !cv.fbclid && !cv.gclid" class="text-xs text-gray-400 hidden sm:inline">Direto</span>
+                            <span class="text-xs font-semibold text-gray-800 w-20 text-right shrink-0"
+                                  x-text="cv.value ? cv.currency + ' ' + parseFloat(cv.value).toFixed(2) : '—'"></span>
+                            <span class="text-xs text-gray-500 hidden md:inline w-24 truncate text-right" x-text="cv.selectedNumber || '—'"></span>
+                            <span x-show="cv.fbSentAt" class="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded hidden md:inline">FB enviado</span>
+                            <span x-show="!cv.fbSentAt" class="text-xs text-gray-300 hidden md:inline">Local</span>
+                          </div>
+                          <template x-if="cv._aberto">
+                            <div class="px-6 pb-3 pt-1 bg-gray-50 rounded-b text-xs text-gray-600 space-y-1.5">
+                              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5">
+                                <div>
+                                  <span class="text-gray-400 block">Horário da venda</span>
+                                  <span x-text="formatDate(cv.createdAt)"></span>
+                                  <span class="ml-2 font-mono text-gray-400" x-text="'(' + toUnix(cv.createdAt) + ')'"></span>
+                                </div>
+                                <div>
+                                  <span class="text-gray-400 block">Horário do clique</span>
+                                  <span x-text="cv.clickAt ? formatDate(cv.clickAt) : '—'"></span>
+                                  <span class="ml-2 font-mono text-gray-400" x-show="cv.clickAt" x-text="'(' + toUnix(cv.clickAt) + ')'"></span>
+                                </div>
+                                <div x-show="cv.fbSentAt">
+                                  <span class="text-gray-400 block">Enviado ao Facebook</span>
+                                  <span x-text="cv.fbSentAt ? formatDate(cv.fbSentAt) : '—'"></span>
+                                </div>
+                                <div x-show="cv.fbclid">
+                                  <span class="text-gray-400 block">fbclid</span>
+                                  <span class="font-mono break-all" x-text="cv.fbclid"></span>
+                                </div>
+                                <div x-show="cv.gclid">
+                                  <span class="text-gray-400 block">gclid</span>
+                                  <span class="font-mono break-all" x-text="cv.gclid"></span>
+                                </div>
+                                <div x-show="cv.pageUrl">
+                                  <span class="text-gray-400 block">Página de origem</span>
+                                  <span class="break-all" x-text="cv.pageUrl"></span>
+                                </div>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <template x-if="totalPaginas > 1">
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span class="text-xs text-gray-400"
+                  x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalConversoes)} de ${totalConversoes}`">
+                </span>
+                <div class="flex items-center gap-1">
+                  <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    ← Anterior
+                  </button>
+                  <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
+                  <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Próxima →
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
 
-      <template x-if="enabled">
-        <div class="mt-5 space-y-4">
-          <!-- Preview link -->
-          <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-            <span class="text-xs text-gray-500">Prévia da página</span>
-            <a :href="previewUrl" target="_blank"
-               class="text-xs text-wa font-medium hover:underline">Abrir →</a>
-          </div>
-
-          <!-- Título -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Título principal <span class="text-red-400">*</span></label>
-            <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-
-          <!-- Subtítulo -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
-            <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
-          </div>
-
-          <!-- Bullets -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
-            <div class="space-y-2">
-              <template x-for="(b, i) in bullets" :key="i">
-                <div class="flex gap-2 items-center">
-                  <span class="text-wa text-sm shrink-0">✓</span>
-                  <input :value="b" @input="bullets[i] = $event.target.value" type="text"
-                    :placeholder="`Benefício ${i + 1}`"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-                  <button @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
-                </div>
-              </template>
-            </div>
-            <button x-show="bullets.length < 6" @click="addBullet()"
-              class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
-          </div>
-
-          <!-- CTA -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
-            <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-          </div>
-
-          <!-- Cores -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
-              <div class="flex gap-2 items-center">
-                <input x-model="bgColor" type="color"
-                  class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                <input x-model="bgColor" type="text" maxlength="7"
-                  class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
-              <div class="flex gap-2 items-center">
-                <input x-model="accentColor" type="color"
-                  class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                <input x-model="accentColor" type="text" maxlength="7"
-                  class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Save -->
-          <div class="flex items-center gap-3 pt-1">
-            <button @click="salvar()"
-              :disabled="salvando"
-              class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
-              <span x-text="salvando ? 'Salvando...' : 'Salvar página'"></span>
-            </button>
-            <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+      <!-- Cliques Recentes -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-900">Cliques Recentes</h2>
+          <div class="flex items-center gap-3">
+            <select x-model="periodoEventos" @change="pagina = 1; carregarEventos()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
+              <option value="7">7 dias</option>
+              <option value="30">30 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+            <span class="text-xs text-gray-500" x-text="totalEventos + ' registros'"></span>
           </div>
         </div>
-      </template>
+
+        <template x-if="carregando">
+          <div class="space-y-2 py-2">
+            <template x-for="i in [1,2,3,4,5]" :key="i">
+              <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+          </div>
+        </template>
+
+        <template x-if="!carregando && totalEventos === 0">
+          <p class="text-sm text-gray-400">Nenhum clique registrado ainda. Instale o snippet na aba Ferramentas para começar.</p>
+        </template>
+
+        <template x-if="!carregando && totalEventos > 0">
+          <div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-gray-100">
+                    <th class="text-left pb-2 font-medium">ID</th>
+                    <th class="text-left pb-2 font-medium">Data/Hora</th>
+                    <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
+                    <th class="text-left pb-2 font-medium">Origem</th>
+                    <th class="text-left pb-2 font-medium hidden md:table-cell">Número</th>
+                    <th class="text-left pb-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="ev in eventos" :key="ev.id">
+                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+                      <td class="py-2 pr-4">
+                        <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.trackingId"></code>
+                      </td>
+                      <td class="py-2 pr-4 text-gray-600 whitespace-nowrap" x-text="formatDate(ev.createdAt)"></td>
+                      <td class="py-2 pr-4 text-gray-500 hidden md:table-cell max-w-[200px] truncate" x-text="ev.pageUrl || '—'" :title="ev.pageUrl"></td>
+                      <td class="py-2 pr-4">
+                        <span x-show="ev.clickParams && ev.clickParams.utm_source" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded" x-text="ev.clickParams && ev.clickParams.utm_source"></span>
+                        <span x-show="!ev.clickParams?.utm_source && ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Facebook</span>
+                        <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
+                        <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
+                      </td>
+                      <td class="py-2 pr-4 hidden md:table-cell">
+                        <span x-show="ev.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.selectedNumber"></span>
+                        <span x-show="!ev.selectedNumber" class="text-xs text-gray-400">—</span>
+                      </td>
+                      <td class="py-2">
+                        <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
+                        <span x-show="!ev.convertido" class="text-xs text-gray-400">Aguardando</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <template x-if="totalPaginas > 1">
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span class="text-xs text-gray-400"
+                  x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalEventos)} de ${totalEventos}`">
+                </span>
+                <div class="flex items-center gap-1">
+                  <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    ← Anterior
+                  </button>
+                  <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
+                  <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Próxima →
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
     </div>
 
-    <!-- Portal do Cliente -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5"
-         x-data="clientPortal()" x-init="init()">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="font-semibold text-gray-900">Portal do Cliente</h2>
-          <p class="text-xs text-gray-400 mt-0.5">Compartilhe um link para que seu cliente registre vendas e acompanhe resultados.</p>
-        </div>
-        <button @click="toggleAcesso()"
-          :class="ativo ? 'bg-wa' : 'bg-gray-200'"
-          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0"
-          :title="ativo ? 'Desativar acesso' : 'Ativar acesso'">
-          <span :class="ativo ? 'translate-x-6' : 'translate-x-1'"
-                class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
-        </button>
-      </div>
+    <!-- ===== TAB: FERRAMENTAS ===== -->
+    <div x-show="aba === 'ferramentas'">
 
-      <template x-if="!token && !ativo">
-        <p class="text-sm text-gray-400">Ative o acesso para gerar o link do cliente.</p>
-      </template>
-
-      <template x-if="token">
-        <div class="space-y-3">
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3" x-data="{ copiado: false }">
-            <code class="text-xs text-gray-700 flex-1 break-all font-mono" x-text="portalUrl"></code>
-            <button @click="navigator.clipboard.writeText(portalUrl).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
-              class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600 whitespace-nowrap">
-              <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
-            </button>
-          </div>
-          <button @click="regenerar()"
-            class="text-xs text-gray-400 hover:text-red-500 transition-colors">
-            Gerar novo link (invalida o anterior)
+      <!-- Link de Rastreamento -->
+      <div class="bg-white rounded-xl border border-wa/30 p-5 mb-5" x-data="{ copiado: false }">
+        <h2 class="font-semibold text-gray-900 mb-1">Link de Rastreamento</h2>
+        <p class="text-sm text-gray-500 mb-3">Use este link diretamente nos botões do WhatsApp. Funciona em todos os dispositivos, incluindo iPhone:</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+          <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{redirectUrl}}</code>
+          <button @click="navigator.clipboard.writeText('{{redirectUrl}}').then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+            class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
+            <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
           </button>
         </div>
-      </template>
+        <p class="text-xs text-gray-400 mt-2">Para capturar parâmetros de anúncio automaticamente (fbclid, gclid, utm_* etc.), instale o snippet abaixo na página.</p>
+      </div>
 
-      <template x-if="errPortal">
-        <p class="mt-2 text-xs text-red-500" x-text="errPortal"></p>
-      </template>
-    </div>
-
-    <!-- Conversões do Site -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="conversoesSite()" x-init="init()">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="font-semibold text-gray-900">Conversões Registradas</h2>
-          <p class="text-xs text-gray-400 mt-0.5" x-text="totalConversoes > 0 ? `${totalConversoes} conversão(ões) — Total: R$ ${totalValor}` : 'Nenhuma conversão registrada ainda.'"></p>
-        </div>
-        <div class="flex items-center gap-3">
-          <select x-model="periodo" @change="pagina = 1; carregar()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
-            <option value="">Todos</option>
-            <option value="7">7 dias</option>
-            <option value="30">30 dias</option>
-            <option value="90">90 dias</option>
-          </select>
+      <!-- Snippet -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="{ copiado: false }">
+        <h2 class="font-semibold text-gray-900 mb-1">Snippet <span class="text-xs font-normal text-gray-400">(opcional — para tráfego pago)</span></h2>
+        <p class="text-sm text-gray-500 mb-3">Cole antes do <code class="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code>. Copia automaticamente qualquer parâmetro da URL da página para o link de rastreamento:</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+          <code class="text-xs text-gray-700 flex-1 break-all font-mono">{{snippet}}</code>
+          <button @click="navigator.clipboard.writeText(`<script src='{{baseUrl}}/tracker.js' data-site='{{siteId}}' async><\/script>`).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+            class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
+            <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
+          </button>
         </div>
       </div>
 
-      <template x-if="carregando">
-        <div class="space-y-2 py-2">
-          <template x-for="i in [1,2,3,4]" :key="i">
-            <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
-          </template>
+      <!-- Distribuição de Números -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5" x-data="numbersManager()">
+        <div class="mb-4">
+          <h2 class="font-semibold text-gray-900">Distribuição de Números WhatsApp</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Distribua o tráfego entre múltiplos números. Se nenhum for cadastrado, usa o número padrão do site.</p>
         </div>
-      </template>
 
-      <template x-if="!carregando && totalConversoes === 0">
-        <p class="text-sm text-gray-400 py-2">Nenhuma conversão registrada neste período.</p>
-      </template>
-
-      <template x-if="!carregando && totalConversoes > 0">
-        <div>
-          <div class="overflow-x-auto">
+        <template x-if="numeros.length > 0">
+          <div class="overflow-x-auto mb-4">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-xs text-gray-500 border-b border-gray-100">
-                  <th class="text-left pb-2 font-medium">Código</th>
-                  <th class="text-left pb-2 font-medium">Horário</th>
-                  <th class="text-left pb-2 font-medium">Origem</th>
-                  <th class="text-left pb-2 font-medium">Valor</th>
-                  <th class="text-left pb-2 font-medium hidden md:table-cell">Atendente</th>
-                  <th class="text-left pb-2 font-medium hidden md:table-cell">Plataforma</th>
+                  <th class="text-left pb-2 font-medium">Label</th>
+                  <th class="text-left pb-2 font-medium">Número</th>
+                  <th class="text-left pb-2 font-medium">Peso</th>
+                  <th class="text-left pb-2 font-medium">% Real</th>
+                  <th class="text-left pb-2 font-medium">Cliques</th>
+                  <th class="text-left pb-2 font-medium">Conversões</th>
+                  <th class="text-left pb-2 font-medium">Taxa</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                <template x-for="cv in conversoes" :key="cv.id">
-                  <tr>
-                    <td colspan="7" class="py-0">
-                      <div class="border-b border-gray-50">
-                        <div class="flex items-center gap-2 py-2 cursor-pointer hover:bg-gray-50 px-1 rounded"
-                             @click="cv._aberto = !cv._aberto">
-                          <span class="text-xs text-gray-400 transition-transform" :class="cv._aberto ? 'rotate-90' : ''" style="display:inline-block">▶</span>
-                          <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono w-24 shrink-0" x-text="cv.trackingId || '—'"></code>
-                          <span class="text-gray-600 text-xs whitespace-nowrap" x-text="formatDate(cv.createdAt)"></span>
-                          <span class="flex-1"></span>
-                          <!-- origem badge -->
-                          <span x-show="cv.utmSource" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded hidden sm:inline" x-text="cv.utmSource"></span>
-                          <span x-show="!cv.utmSource && cv.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded hidden sm:inline">Facebook</span>
-                          <span x-show="!cv.utmSource && cv.gclid && !cv.fbclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded hidden sm:inline">Google</span>
-                          <span x-show="!cv.utmSource && !cv.fbclid && !cv.gclid" class="text-xs text-gray-400 hidden sm:inline">Direto</span>
-                          <!-- valor -->
-                          <span class="text-xs font-semibold text-gray-800 w-20 text-right shrink-0"
-                                x-text="cv.value ? cv.currency + ' ' + parseFloat(cv.value).toFixed(2) : '—'"></span>
-                          <!-- atendente -->
-                          <span class="text-xs text-gray-500 hidden md:inline w-24 truncate text-right" x-text="cv.selectedNumber || '—'"></span>
-                          <!-- plataforma enviada -->
-                          <span x-show="cv.fbSentAt" class="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded hidden md:inline">FB enviado</span>
-                          <span x-show="!cv.fbSentAt" class="text-xs text-gray-300 hidden md:inline">Local</span>
-                        </div>
-                        <!-- linha expandida -->
-                        <template x-if="cv._aberto">
-                          <div class="px-6 pb-3 pt-1 bg-gray-50 rounded-b text-xs text-gray-600 space-y-1.5">
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5">
-                              <div>
-                                <span class="text-gray-400 block">Horário da venda</span>
-                                <span x-text="formatDate(cv.createdAt)"></span>
-                                <span class="ml-2 font-mono text-gray-400" x-text="'(' + toUnix(cv.createdAt) + ')'"></span>
-                              </div>
-                              <div>
-                                <span class="text-gray-400 block">Horário do clique</span>
-                                <span x-text="cv.clickAt ? formatDate(cv.clickAt) : '—'"></span>
-                                <span class="ml-2 font-mono text-gray-400" x-show="cv.clickAt" x-text="'(' + toUnix(cv.clickAt) + ')'"></span>
-                              </div>
-                              <div x-show="cv.fbSentAt">
-                                <span class="text-gray-400 block">Enviado ao Facebook</span>
-                                <span x-text="cv.fbSentAt ? formatDate(cv.fbSentAt) : '—'"></span>
-                              </div>
-                              <div x-show="cv.fbclid">
-                                <span class="text-gray-400 block">fbclid</span>
-                                <span class="font-mono break-all" x-text="cv.fbclid"></span>
-                              </div>
-                              <div x-show="cv.gclid">
-                                <span class="text-gray-400 block">gclid</span>
-                                <span class="font-mono break-all" x-text="cv.gclid"></span>
-                              </div>
-                              <div x-show="cv.pageUrl">
-                                <span class="text-gray-400 block">Página de origem</span>
-                                <span class="break-all" x-text="cv.pageUrl"></span>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-                      </div>
-                    </td>
+                <template x-for="n in numeros" :key="n.id">
+                  <tr class="border-b border-gray-50">
+                    <td class="py-2 pr-4 text-gray-600" x-text="n.label || '—'"></td>
+                    <td class="py-2 pr-4"><code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="n.number"></code></td>
+                    <td class="py-2 pr-4 text-gray-600" x-text="n.weight"></td>
+                    <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="calcPercent(n.weight) + '%'"></span></td>
+                    <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).cliques"></td>
+                    <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).conversoes"></td>
+                    <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="getStats(n.number).taxa + '%'"></span></td>
+                    <td class="py-2"><button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button></td>
                   </tr>
                 </template>
               </tbody>
             </table>
           </div>
-          <!-- Paginação -->
-          <template x-if="totalPaginas > 1">
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <span class="text-xs text-gray-400"
-                x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalConversoes)} de ${totalConversoes}`">
-              </span>
-              <div class="flex items-center gap-1">
-                <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
-                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  ← Anterior
-                </button>
-                <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
-                <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
-                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  Próxima →
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </template>
+        </template>
+
+        <template x-if="numeros.length === 0">
+          <p class="text-sm text-gray-400 mb-4">Nenhum número configurado — usando o número padrão do site.</p>
+        </template>
+
+        <form @submit.prevent="adicionar" class="flex gap-2 flex-wrap items-end">
+          <div class="flex-1 min-w-[120px]">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
+            <input x-model="novo.label" type="text" placeholder="Ex: Vendedor A"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+          </div>
+          <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Número <span class="text-red-400">*</span></label>
+            <input x-model="novo.number" type="text" placeholder="5511999990000" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+          </div>
+          <div class="w-24">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Peso</label>
+            <input x-model="novo.weight" type="number" min="1" placeholder="50"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+          </div>
+          <button type="submit" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            + Adicionar
+          </button>
+        </form>
+      </div>
     </div>
 
-    <!-- Eventos recentes -->
-    <div class="bg-white rounded-xl border border-gray-100 p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-semibold text-gray-900">Cliques Recentes</h2>
-        <div class="flex items-center gap-3">
-          <select x-model="periodoEventos" @change="pagina = 1; carregarEventos()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
-            <option value="7">7 dias</option>
-            <option value="30">30 dias</option>
-            <option value="90">90 dias</option>
-          </select>
-          <span class="text-xs text-gray-500" x-text="totalEventos + ' registros'"></span>
-        </div>
+    <!-- ===== TAB: CONFIGURAÇÕES ===== -->
+    <div x-show="aba === 'configuracoes'">
+
+      <!-- Configurações do Site -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Configurações do Site</h2>
+        <form method="POST" action="/dashboard/sites/{{siteId}}/editar" class="space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Nome</label>
+              <input type="text" name="name" required value="{{siteName}}"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Domínio</label>
+              <input type="text" name="domain" required :value="site.domain"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
+              <input type="text" name="whatsapp_number" required :value="site.whatsappNumber"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+
+            <div class="col-span-2 pt-2 border-t border-gray-100">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Facebook Pixel</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Pixel ID</label>
+                  <input type="text" name="fb_pixel_id" :value="site.fbPixelId"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Token da API <small class="text-gray-400">(deixe em branco para manter)</small></label>
+                  <input type="password" name="fb_access_token" placeholder="••••••••"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Código de teste</label>
+                  <input type="text" name="fb_test_event_code" :value="site.fbTestEventCode"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+              </div>
+            </div>
+
+            <div class="col-span-2 pt-2 border-t border-gray-100">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Google Ads CAPI</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Customer ID</label>
+                  <input type="text" name="google_customer_id" :value="site.googleCustomerId" placeholder="1234567890"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Conversion Action ID
+                    <span class="font-normal text-gray-400 normal-case">(nº na URL da conversão)</span>
+                  </label>
+                  <input type="text" name="google_conversion_action_id" :value="site.googleConversionActionId" placeholder="987654321"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+                <div class="col-span-2">
+                  <template x-if="site.googleConectado">
+                    <div class="flex items-center justify-between px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-sm font-medium text-green-800">Conta Google conectada</span>
+                      </div>
+                      <form method="POST" action="/dashboard/google/disconnect">
+                        <input type="hidden" name="siteId" value="{{siteId}}">
+                        <button type="submit" class="text-xs text-red-400 hover:text-red-600 transition-colors">Desconectar</button>
+                      </form>
+                    </div>
+                  </template>
+                  <template x-if="!site.googleConectado">
+                    <a href="/dashboard/google/connect?siteId={{siteId}}"
+                       class="inline-flex items-center gap-2.5 px-4 py-2.5 border border-gray-300 hover:border-gray-400 rounded-lg text-sm text-gray-700 transition-colors">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
+                      Conectar com Google
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-span-2 pt-2 border-t border-gray-100">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">TikTok Pixel</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Pixel ID</label>
+                  <input type="text" name="tiktok_pixel_id" :value="site.tiktokPixelId" placeholder="CXXXXXXXXXXXXXX"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Access Token <small class="text-gray-400">(branco = manter)</small></label>
+                  <input type="password" name="tiktok_access_token" placeholder="••••••••"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Mensagem padrão</label>
+            <textarea name="default_message" rows="2" x-text="site.defaultMessage"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
+          </div>
+          <button type="submit" class="bg-wa hover:bg-wa-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">
+            Salvar alterações
+          </button>
+        </form>
       </div>
 
-      <template x-if="carregando">
-        <div class="space-y-2 py-2">
-          <template x-for="i in [1,2,3,4,5]" :key="i">
-            <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
-          </template>
-        </div>
-      </template>
-
-      <template x-if="!carregando && totalEventos === 0">
-        <p class="text-sm text-gray-400">Nenhum clique registrado ainda. Instale o snippet no site para começar.</p>
-      </template>
-
-      <template x-if="!carregando && totalEventos > 0">
-        <div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-gray-500 border-b border-gray-100">
-                  <th class="text-left pb-2 font-medium">ID</th>
-                  <th class="text-left pb-2 font-medium">Data/Hora</th>
-                  <th class="text-left pb-2 font-medium hidden md:table-cell">Página</th>
-                  <th class="text-left pb-2 font-medium">Origem</th>
-                  <th class="text-left pb-2 font-medium hidden md:table-cell">Número</th>
-                  <th class="text-left pb-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="ev in eventos" :key="ev.id">
-                  <tr class="border-b border-gray-50 hover:bg-gray-50">
-                    <td class="py-2 pr-4">
-                      <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.trackingId"></code>
-                    </td>
-                    <td class="py-2 pr-4 text-gray-600 whitespace-nowrap" x-text="formatDate(ev.createdAt)"></td>
-                    <td class="py-2 pr-4 text-gray-500 hidden md:table-cell max-w-[200px] truncate" x-text="ev.pageUrl || '—'" :title="ev.pageUrl"></td>
-                    <td class="py-2 pr-4">
-                      <span x-show="ev.clickParams && ev.clickParams.utm_source" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded" x-text="ev.clickParams && ev.clickParams.utm_source"></span>
-                      <span x-show="!ev.clickParams?.utm_source && ev.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">Facebook</span>
-                      <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && ev.clickParams?.gclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">Google</span>
-                      <span x-show="!ev.clickParams?.utm_source && !ev.fbclid && !ev.clickParams?.gclid" class="text-xs text-gray-400">Direto</span>
-                    </td>
-                    <td class="py-2 pr-4 hidden md:table-cell">
-                      <span x-show="ev.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="ev.selectedNumber"></span>
-                      <span x-show="!ev.selectedNumber" class="text-xs text-gray-400">—</span>
-                    </td>
-                    <td class="py-2">
-                      <span x-show="ev.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
-                      <span x-show="!ev.convertido" class="text-xs text-gray-400">Aguardando</span>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+      <!-- Página de Pré-Venda -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5"
+           x-data="presellEditor()" x-init="init()">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="font-semibold text-gray-900">Página de Pré-Venda</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Exibe uma página personalizada antes de ir ao WhatsApp — ideal para anúncios.</p>
           </div>
+          <button @click="toggleEnabled()"
+            :class="enabled ? 'bg-wa' : 'bg-gray-200'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
+            <span :class="enabled ? 'translate-x-6' : 'translate-x-1'"
+                  class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
+          </button>
+        </div>
 
-          <!-- Paginação -->
-          <template x-if="totalPaginas > 1">
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <span class="text-xs text-gray-400"
-                x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalEventos)} de ${totalEventos}`">
-              </span>
-              <div class="flex items-center gap-1">
-                <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
-                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  ← Anterior
-                </button>
-                <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
-                <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
-                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  Próxima →
-                </button>
+        <template x-if="enabled">
+          <div class="mt-5 space-y-4">
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+              <span class="text-xs text-gray-500">Prévia da página</span>
+              <a :href="previewUrl" target="_blank"
+                 class="text-xs text-wa font-medium hover:underline">Abrir →</a>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Título principal <span class="text-red-400">*</span></label>
+              <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
+              <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
+              <div class="space-y-2">
+                <template x-for="(b, i) in bullets" :key="i">
+                  <div class="flex gap-2 items-center">
+                    <span class="text-wa text-sm shrink-0">✓</span>
+                    <input :value="b" @input="bullets[i] = $event.target.value" type="text"
+                      :placeholder="`Benefício ${i + 1}`"
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                    <button @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                  </div>
+                </template>
+              </div>
+              <button x-show="bullets.length < 6" @click="addBullet()"
+                class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
+              <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
+                <div class="flex gap-2 items-center">
+                  <input x-model="bgColor" type="color"
+                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                  <input x-model="bgColor" type="text" maxlength="7"
+                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
+                <div class="flex gap-2 items-center">
+                  <input x-model="accentColor" type="color"
+                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                  <input x-model="accentColor" type="text" maxlength="7"
+                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
               </div>
             </div>
-          </template>
+
+            <div class="flex items-center gap-3 pt-1">
+              <button @click="salvar()"
+                :disabled="salvando"
+                class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+                <span x-text="salvando ? 'Salvando...' : 'Salvar página'"></span>
+              </button>
+              <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Portal do Cliente -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5"
+           x-data="clientPortal()" x-init="init()">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-semibold text-gray-900">Portal do Cliente</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Compartilhe um link para que seu cliente registre vendas e acompanhe resultados.</p>
+          </div>
+          <button @click="toggleAcesso()"
+            :class="ativo ? 'bg-wa' : 'bg-gray-200'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0"
+            :title="ativo ? 'Desativar acesso' : 'Ativar acesso'">
+            <span :class="ativo ? 'translate-x-6' : 'translate-x-1'"
+                  class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
+          </button>
         </div>
-      </template>
+
+        <template x-if="!token && !ativo">
+          <p class="text-sm text-gray-400">Ative o acesso para gerar o link do cliente.</p>
+        </template>
+
+        <template x-if="token">
+          <div class="space-y-3">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3" x-data="{ copiado: false }">
+              <code class="text-xs text-gray-700 flex-1 break-all font-mono" x-text="portalUrl"></code>
+              <button @click="navigator.clipboard.writeText(portalUrl).then(() => { copiado = true; setTimeout(() => copiado = false, 2000) })"
+                class="shrink-0 text-sm border border-gray-300 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600 whitespace-nowrap">
+                <span x-text="copiado ? '✅ Copiado!' : 'Copiar'"></span>
+              </button>
+            </div>
+            <button @click="regenerar()"
+              class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+              Gerar novo link (invalida o anterior)
+            </button>
+          </div>
+        </template>
+
+        <template x-if="errPortal">
+          <p class="mt-2 text-xs text-red-500" x-text="errPortal"></p>
+        </template>
+      </div>
     </div>
+
   </main>
 
   <script>
@@ -810,6 +840,7 @@
     function detailPage() {
       return {
         site: SITE_DATA,
+        aba: 'relatorios',
         eventos: [],
         carregando: true,
         periodoEventos: 30,
@@ -825,7 +856,6 @@
           if (n < 1 || n > this.totalPaginas) return;
           this.pagina = n;
           await this.carregarEventos();
-          document.querySelector('.bg-white.rounded-xl.border.border-gray-100.p-5:last-of-type')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         },
         async carregarEventos() {
           this.carregando = true;
