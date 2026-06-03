@@ -303,6 +303,138 @@
       </template>
     </div>
 
+    <!-- Conversões do Site -->
+    <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5" x-data="conversoesSite()" x-init="init()">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-gray-900">Conversões Registradas</h2>
+          <p class="text-xs text-gray-400 mt-0.5" x-text="totalConversoes > 0 ? `${totalConversoes} conversão(ões) — Total: R$ ${totalValor}` : 'Nenhuma conversão registrada ainda.'"></p>
+        </div>
+        <div class="flex items-center gap-3">
+          <select x-model="periodo" @change="pagina = 1; carregar()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 bg-white focus:outline-none">
+            <option value="">Todos</option>
+            <option value="7">7 dias</option>
+            <option value="30">30 dias</option>
+            <option value="90">90 dias</option>
+          </select>
+        </div>
+      </div>
+
+      <template x-if="carregando">
+        <div class="space-y-2 py-2">
+          <template x-for="i in [1,2,3,4]" :key="i">
+            <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+          </template>
+        </div>
+      </template>
+
+      <template x-if="!carregando && totalConversoes === 0">
+        <p class="text-sm text-gray-400 py-2">Nenhuma conversão registrada neste período.</p>
+      </template>
+
+      <template x-if="!carregando && totalConversoes > 0">
+        <div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-gray-500 border-b border-gray-100">
+                  <th class="text-left pb-2 font-medium">Código</th>
+                  <th class="text-left pb-2 font-medium">Horário</th>
+                  <th class="text-left pb-2 font-medium">Origem</th>
+                  <th class="text-left pb-2 font-medium">Valor</th>
+                  <th class="text-left pb-2 font-medium hidden md:table-cell">Atendente</th>
+                  <th class="text-left pb-2 font-medium hidden md:table-cell">Plataforma</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="cv in conversoes" :key="cv.id">
+                  <tr>
+                    <td colspan="7" class="py-0">
+                      <div class="border-b border-gray-50">
+                        <div class="flex items-center gap-2 py-2 cursor-pointer hover:bg-gray-50 px-1 rounded"
+                             @click="cv._aberto = !cv._aberto">
+                          <span class="text-xs text-gray-400 transition-transform" :class="cv._aberto ? 'rotate-90' : ''" style="display:inline-block">▶</span>
+                          <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono w-24 shrink-0" x-text="cv.trackingId || '—'"></code>
+                          <span class="text-gray-600 text-xs whitespace-nowrap" x-text="formatDate(cv.createdAt)"></span>
+                          <span class="flex-1"></span>
+                          <!-- origem badge -->
+                          <span x-show="cv.utmSource" class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded hidden sm:inline" x-text="cv.utmSource"></span>
+                          <span x-show="!cv.utmSource && cv.fbclid" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded hidden sm:inline">Facebook</span>
+                          <span x-show="!cv.utmSource && cv.gclid && !cv.fbclid" class="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded hidden sm:inline">Google</span>
+                          <span x-show="!cv.utmSource && !cv.fbclid && !cv.gclid" class="text-xs text-gray-400 hidden sm:inline">Direto</span>
+                          <!-- valor -->
+                          <span class="text-xs font-semibold text-gray-800 w-20 text-right shrink-0"
+                                x-text="cv.value ? cv.currency + ' ' + parseFloat(cv.value).toFixed(2) : '—'"></span>
+                          <!-- atendente -->
+                          <span class="text-xs text-gray-500 hidden md:inline w-24 truncate text-right" x-text="cv.selectedNumber || '—'"></span>
+                          <!-- plataforma enviada -->
+                          <span x-show="cv.fbSentAt" class="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded hidden md:inline">FB enviado</span>
+                          <span x-show="!cv.fbSentAt" class="text-xs text-gray-300 hidden md:inline">Local</span>
+                        </div>
+                        <!-- linha expandida -->
+                        <template x-if="cv._aberto">
+                          <div class="px-6 pb-3 pt-1 bg-gray-50 rounded-b text-xs text-gray-600 space-y-1.5">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5">
+                              <div>
+                                <span class="text-gray-400 block">Horário da venda</span>
+                                <span x-text="formatDate(cv.createdAt)"></span>
+                                <span class="ml-2 font-mono text-gray-400" x-text="'(' + toUnix(cv.createdAt) + ')'"></span>
+                              </div>
+                              <div>
+                                <span class="text-gray-400 block">Horário do clique</span>
+                                <span x-text="cv.clickAt ? formatDate(cv.clickAt) : '—'"></span>
+                                <span class="ml-2 font-mono text-gray-400" x-show="cv.clickAt" x-text="'(' + toUnix(cv.clickAt) + ')'"></span>
+                              </div>
+                              <div x-show="cv.fbSentAt">
+                                <span class="text-gray-400 block">Enviado ao Facebook</span>
+                                <span x-text="cv.fbSentAt ? formatDate(cv.fbSentAt) : '—'"></span>
+                              </div>
+                              <div x-show="cv.fbclid">
+                                <span class="text-gray-400 block">fbclid</span>
+                                <span class="font-mono break-all" x-text="cv.fbclid"></span>
+                              </div>
+                              <div x-show="cv.gclid">
+                                <span class="text-gray-400 block">gclid</span>
+                                <span class="font-mono break-all" x-text="cv.gclid"></span>
+                              </div>
+                              <div x-show="cv.pageUrl">
+                                <span class="text-gray-400 block">Página de origem</span>
+                                <span class="break-all" x-text="cv.pageUrl"></span>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <!-- Paginação -->
+          <template x-if="totalPaginas > 1">
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+              <span class="text-xs text-gray-400"
+                x-text="`${(pagina-1)*porPagina+1}–${Math.min(pagina*porPagina, totalConversoes)} de ${totalConversoes}`">
+              </span>
+              <div class="flex items-center gap-1">
+                <button @click="irPagina(pagina - 1)" :disabled="pagina === 1"
+                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Anterior
+                </button>
+                <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${pagina} / ${totalPaginas}`"></span>
+                <button @click="irPagina(pagina + 1)" :disabled="pagina >= totalPaginas"
+                  class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Próxima →
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+
     <!-- Eventos recentes -->
     <div class="bg-white rounded-xl border border-gray-100 p-5">
       <div class="flex items-center justify-between mb-4">
@@ -485,6 +617,47 @@
         async regenerar() {
           if (!confirm('Isso vai invalidar o link atual. Continuar?')) return;
           await this.gerarToken();
+        },
+      };
+    }
+
+    function conversoesSite() {
+      return {
+        conversoes: [],
+        carregando: true,
+        periodo: '30',
+        pagina: 1,
+        porPagina: 25,
+        totalConversoes: 0,
+        totalValor: '0,00',
+        get totalPaginas() { return Math.max(1, Math.ceil(this.totalConversoes / this.porPagina)); },
+        async init() { await this.carregar(); },
+        async irPagina(n) {
+          if (n < 1 || n > this.totalPaginas) return;
+          this.pagina = n;
+          await this.carregar();
+        },
+        async carregar() {
+          this.carregando = true;
+          const offset = (this.pagina - 1) * this.porPagina;
+          let url = `/api/conversions?siteId=${SITE_ID}&limit=${this.porPagina}&offset=${offset}`;
+          if (this.periodo) url += `&days=${this.periodo}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            this.conversoes = (data.items || []).map(cv => ({ ...cv, _aberto: false }));
+            this.totalConversoes = data.total || 0;
+            const sum = (data.items || []).reduce((s, cv) => s + (parseFloat(cv.value) || 0), 0);
+            this.totalValor = sum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+          this.carregando = false;
+        },
+        formatDate(iso) {
+          if (!iso) return '—';
+          return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        },
+        toUnix(iso) {
+          return iso ? Math.floor(new Date(iso).getTime() / 1000).toString() : '';
         },
       };
     }
