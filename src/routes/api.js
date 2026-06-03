@@ -332,6 +332,31 @@ api.get('/sites/:siteId/events', async (c) => {
   });
 });
 
+api.patch('/sites/:siteId/presell', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: existing } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!existing) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const updates = {};
+  if (typeof body.enabled === 'boolean') updates.presell_enabled = body.enabled;
+  if (body.title !== undefined) updates.presell_title = body.title || null;
+  if (body.subtitle !== undefined) updates.presell_subtitle = body.subtitle || null;
+  if (Array.isArray(body.bullets)) updates.presell_bullets = body.bullets.filter(b => b?.trim()).slice(0, 6);
+  if (body.ctaText !== undefined) updates.presell_cta_text = body.ctaText || 'Falar no WhatsApp';
+  if (body.bgColor !== undefined) updates.presell_bg_color = body.bgColor || '#0f172a';
+  if (body.accentColor !== undefined) updates.presell_accent_color = body.accentColor || '#25D366';
+
+  const { error } = await supabase.from('sites').update(updates).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ sucesso: true });
+});
+
 api.get('/sites/:siteId/numbers', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();

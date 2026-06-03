@@ -39,6 +39,13 @@ export const mapSite = (s) => !s ? null : {
   clientToken: s.client_token ?? null,
   clientAccessEnabled: s.client_access_enabled ?? false,
   createdAt: s.created_at,
+  presellEnabled: s.presell_enabled ?? false,
+  presellTitle: s.presell_title ?? '',
+  presellSubtitle: s.presell_subtitle ?? '',
+  presellBullets: s.presell_bullets ?? [],
+  presellCtaText: s.presell_cta_text ?? 'Falar no WhatsApp',
+  presellBgColor: s.presell_bg_color ?? '#0f172a',
+  presellAccentColor: s.presell_accent_color ?? '#25D366',
 };
 
 export const mapEvent = (e) => !e ? null : {
