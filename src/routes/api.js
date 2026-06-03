@@ -83,6 +83,25 @@ api.get('/conversions', async (c) => {
   });
 });
 
+api.get('/debug/conversions', async (c) => {
+  const user = c.get('user');
+  const { data: userSites } = await supabase.from('sites').select('id').eq('user_id', user.userId);
+  const siteIds = (userSites || []).map(s => s.id);
+
+  const r1 = await supabase.from('conversions').select('*', { count: 'exact', head: true }).in('site_id', siteIds);
+  const r2 = await supabase.from('conversions').select('id, event_id, value, created_at').in('site_id', siteIds).limit(3);
+  const r3 = await supabase.from('conversions').select('*').in('site_id', siteIds).limit(3);
+  const r4 = await supabase.from('conversions').select('id, event_id').in('site_id', siteIds).order('created_at', { ascending: false }).limit(3);
+
+  return c.json({
+    siteIds,
+    count: r1.count, countErr: r1.error?.message,
+    selectMinimal: r2.data, selectMinimalErr: r2.error?.message,
+    selectStar: r3.data, selectStarErr: r3.error?.message,
+    selectWithOrder: r4.data, selectWithOrderErr: r4.error?.message,
+  });
+});
+
 api.get('/events/lookup/:trackingId', async (c) => {
   const { trackingId } = c.req.param();
   const id = trackingId.toUpperCase().trim();
