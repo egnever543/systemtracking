@@ -29,14 +29,14 @@ api.get('/conversions', async (c) => {
   let dataQ = supabase.from('conversions')
     .select('*')
     .in('site_id', targetIds)
-    .order('created_at', { ascending: false });
+    .order('registered_at', { ascending: false });
 
   if (days) {
     const since = new Date();
     since.setDate(since.getDate() - days);
     const sinceStr = since.toISOString();
-    countQ = countQ.gte('created_at', sinceStr);
-    dataQ = dataQ.gte('created_at', sinceStr);
+    countQ = countQ.gte('registered_at', sinceStr);
+    dataQ = dataQ.gte('registered_at', sinceStr);
   }
 
   const [{ count: total, error: countErr }, { data: rows, error: dataErr }] = await Promise.all([
@@ -70,7 +70,7 @@ api.get('/conversions', async (c) => {
         value: r.value ?? null,
         currency: r.currency ?? null,
         fbSentAt: r.fb_sent_at ?? null,
-        createdAt: r.created_at,
+        createdAt: r.registered_at,
         trackingId: ev.tracking_id || null,
         fbclid: ev.fbclid || null,
         gclid: ev.click_params?.gclid || null,
@@ -80,25 +80,6 @@ api.get('/conversions', async (c) => {
         clickAt: ev.created_at || null,
       };
     }),
-  });
-});
-
-api.get('/debug/conversions', async (c) => {
-  const user = c.get('user');
-  const { data: userSites } = await supabase.from('sites').select('id').eq('user_id', user.userId);
-  const siteIds = (userSites || []).map(s => s.id);
-
-  const r1 = await supabase.from('conversions').select('*', { count: 'exact', head: true }).in('site_id', siteIds);
-  const r2 = await supabase.from('conversions').select('id, event_id, value, created_at').in('site_id', siteIds).limit(3);
-  const r3 = await supabase.from('conversions').select('*').in('site_id', siteIds).limit(3);
-  const r4 = await supabase.from('conversions').select('id, event_id').in('site_id', siteIds).order('created_at', { ascending: false }).limit(3);
-
-  return c.json({
-    siteIds,
-    count: r1.count, countErr: r1.error?.message,
-    selectMinimal: r2.data, selectMinimalErr: r2.error?.message,
-    selectStar: r3.data, selectStarErr: r3.error?.message,
-    selectWithOrder: r4.data, selectWithOrderErr: r4.error?.message,
   });
 });
 
@@ -215,6 +196,7 @@ api.post('/conversions', async (c) => {
     site_id: event.siteId,
     value: finalValue,
     currency: finalCurrency,
+    registered_by: user.userId,
     fb_response: capiResult.skipped ? null : JSON.stringify(capiResult.response),
     fb_sent_at: capiResult.skipped ? null : new Date().toISOString(),
   });

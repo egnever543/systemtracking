@@ -149,9 +149,9 @@ client.get('/:token/api/conversions', resolveToken, async (c) => {
   const [{ count: total }, { data: rows }] = await Promise.all([
     supabase.from('conversions').select('*', { count: 'exact', head: true }).eq('site_id', siteId),
     supabase.from('conversions')
-      .select('id, event_id, value, currency, created_at')
+      .select('id, event_id, value, currency, registered_at')
       .eq('site_id', siteId)
-      .order('created_at', { ascending: false })
+      .order('registered_at', { ascending: false })
       .range(offset, offset + limit - 1),
   ]);
 
@@ -169,7 +169,7 @@ client.get('/:token/api/conversions', resolveToken, async (c) => {
       id: r.id,
       value: r.value,
       currency: r.currency,
-      createdAt: r.created_at,
+      createdAt: r.registered_at,
       trackingId: eventsMap[r.event_id]?.tracking_id || null,
       selectedNumber: eventsMap[r.event_id]?.selected_number || null,
     })),
