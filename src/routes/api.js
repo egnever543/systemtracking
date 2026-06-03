@@ -23,30 +23,12 @@ api.get('/conversions', async (c) => {
 
   const targetIds = filterSite && siteIds.includes(filterSite) ? [filterSite] : siteIds;
 
-  // Resolve via events table — avoids dependência de site_id na tabela conversions
-  const { data: siteEvents, error: evErr } = await supabase
-    .from('events')
-    .select('id, site_id')
-    .in('site_id', targetIds);
-
-  if (evErr) {
-    console.error('[GET /api/conversions] events query error:', evErr);
-    return c.json({ items: [], total: 0, sites: (userSites || []).map(s => ({ id: s.id, name: s.name })) });
-  }
-
-  const allEventIds = (siteEvents || []).map(e => e.id);
-  const eventSiteMap = Object.fromEntries((siteEvents || []).map(e => [e.id, e.site_id]));
-
-  if (allEventIds.length === 0) {
-    return c.json({ items: [], total: 0, sites: (userSites || []).map(s => ({ id: s.id, name: s.name })) });
-  }
-
   let countQ = supabase.from('conversions')
     .select('*', { count: 'exact', head: true })
-    .in('event_id', allEventIds);
+    .in('site_id', targetIds);
   let dataQ = supabase.from('conversions')
-    .select('id, event_id, value, currency, fb_sent_at, created_at')
-    .in('event_id', allEventIds)
+    .select('*')
+    .in('site_id', targetIds)
     .order('created_at', { ascending: false });
 
   if (days) {
@@ -57,41 +39,37 @@ api.get('/conversions', async (c) => {
     dataQ = dataQ.gte('created_at', sinceStr);
   }
 
-  const [countResult, dataResult] = await Promise.all([
+  const [{ count: total, error: countErr }, { data: rows, error: dataErr }] = await Promise.all([
     countQ,
     dataQ.range(offset, offset + limit - 1),
   ]);
 
-  if (countResult.error || dataResult.error) {
-    console.error('[GET /api/conversions] conversions query error:', countResult.error || dataResult.error);
-    return c.json({ items: [], total: 0, sites: (userSites || []).map(s => ({ id: s.id, name: s.name })) });
-  }
-
-  const { count: total } = countResult;
-  const { data: rows } = dataResult;
+  if (countErr) console.error('[GET /api/conversions] count error:', countErr);
+  if (dataErr) console.error('[GET /api/conversions] data error:', dataErr);
 
   const convEventIds = (rows || []).map(r => r.event_id).filter(Boolean);
-  let evDetailMap = {};
+  let evMap = {};
   if (convEventIds.length > 0) {
-    const { data: evRows } = await supabase.from('events')
+    const { data: evRows, error: evErr } = await supabase.from('events')
       .select('id, site_id, tracking_id, fbclid, click_params, page_url, selected_number, created_at')
       .in('id', convEventIds);
-    for (const ev of (evRows || [])) evDetailMap[ev.id] = ev;
+    if (evErr) console.error('[GET /api/conversions] events join error:', evErr);
+    for (const ev of (evRows || [])) evMap[ev.id] = ev;
   }
 
   return c.json({
     sites: (userSites || []).map(s => ({ id: s.id, name: s.name })),
     total: total || 0,
     items: (rows || []).map(r => {
-      const ev = evDetailMap[r.event_id] || {};
-      const siteId = ev.site_id || eventSiteMap[r.event_id] || null;
+      const ev = evMap[r.event_id] || {};
+      const siteId = ev.site_id || r.site_id || null;
       return {
         id: r.id,
         siteId,
         siteName: siteNames[siteId] || '—',
-        value: r.value,
-        currency: r.currency,
-        fbSentAt: r.fb_sent_at,
+        value: r.value ?? null,
+        currency: r.currency ?? null,
+        fbSentAt: r.fb_sent_at ?? null,
         createdAt: r.created_at,
         trackingId: ev.tracking_id || null,
         fbclid: ev.fbclid || null,
