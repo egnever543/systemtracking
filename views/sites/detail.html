@@ -73,6 +73,11 @@
               class="px-5 py-2.5 text-sm -mb-px transition-colors">
         Ferramentas
       </button>
+      <button @click="aba = 'presell'"
+              :class="aba === 'presell' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
+              class="px-5 py-2.5 text-sm -mb-px transition-colors">
+        Pré-Venda
+      </button>
       <button @click="aba = 'configuracoes'"
               :class="aba === 'configuracoes' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
               class="px-5 py-2.5 text-sm -mb-px transition-colors">
@@ -403,6 +408,104 @@
       </div>
     </div>
 
+    <!-- ===== TAB: PRÉ-VENDA ===== -->
+    <div x-show="aba === 'presell'">
+      <div class="bg-white rounded-xl border border-gray-100 p-5"
+           x-data="presellEditor()" x-init="init()">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="font-semibold text-gray-900">Página de Pré-Venda</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Exibe uma página personalizada antes de ir ao WhatsApp — ideal para anúncios.</p>
+          </div>
+          <button @click="toggleEnabled()"
+            :class="enabled ? 'bg-wa' : 'bg-gray-200'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
+            <span :class="enabled ? 'translate-x-6' : 'translate-x-1'"
+                  class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
+          </button>
+        </div>
+
+        <template x-if="enabled">
+          <div class="mt-5 space-y-4">
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+              <span class="text-xs text-gray-500">Prévia da página</span>
+              <a :href="previewUrl" target="_blank"
+                 class="text-xs text-wa font-medium hover:underline">Abrir →</a>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Título principal <span class="text-red-400">*</span></label>
+              <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
+              <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
+              <div class="space-y-2">
+                <template x-for="(b, i) in bullets" :key="i">
+                  <div class="flex gap-2 items-center">
+                    <span class="text-wa text-sm shrink-0">✓</span>
+                    <input :value="b" @input="bullets[i] = $event.target.value" type="text"
+                      :placeholder="`Benefício ${i + 1}`"
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                    <button @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                  </div>
+                </template>
+              </div>
+              <button x-show="bullets.length < 6" @click="addBullet()"
+                class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
+              <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
+                <div class="flex gap-2 items-center">
+                  <input x-model="bgColor" type="color"
+                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                  <input x-model="bgColor" type="text" maxlength="7"
+                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
+                <div class="flex gap-2 items-center">
+                  <input x-model="accentColor" type="color"
+                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                  <input x-model="accentColor" type="text" maxlength="7"
+                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-1">
+              <button @click="salvar()"
+                :disabled="salvando"
+                class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+                <span x-text="salvando ? 'Salvando...' : 'Salvar página'"></span>
+              </button>
+              <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="!enabled">
+          <p class="mt-4 text-sm text-gray-400">Ative o toggle acima para configurar a página de pré-venda.</p>
+        </template>
+      </div>
+    </div>
+
     <!-- ===== TAB: CONFIGURAÇÕES ===== -->
     <div x-show="aba === 'configuracoes'">
 
@@ -517,98 +620,6 @@
             Salvar alterações
           </button>
         </form>
-      </div>
-
-      <!-- Página de Pré-Venda -->
-      <div class="bg-white rounded-xl border border-gray-100 p-5 mb-5"
-           x-data="presellEditor()" x-init="init()">
-        <div class="flex items-center justify-between mb-1">
-          <div>
-            <h2 class="font-semibold text-gray-900">Página de Pré-Venda</h2>
-            <p class="text-xs text-gray-400 mt-0.5">Exibe uma página personalizada antes de ir ao WhatsApp — ideal para anúncios.</p>
-          </div>
-          <button @click="toggleEnabled()"
-            :class="enabled ? 'bg-wa' : 'bg-gray-200'"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
-            <span :class="enabled ? 'translate-x-6' : 'translate-x-1'"
-                  class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
-          </button>
-        </div>
-
-        <template x-if="enabled">
-          <div class="mt-5 space-y-4">
-            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-              <span class="text-xs text-gray-500">Prévia da página</span>
-              <a :href="previewUrl" target="_blank"
-                 class="text-xs text-wa font-medium hover:underline">Abrir →</a>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Título principal <span class="text-red-400">*</span></label>
-              <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
-              <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
-              <div class="space-y-2">
-                <template x-for="(b, i) in bullets" :key="i">
-                  <div class="flex gap-2 items-center">
-                    <span class="text-wa text-sm shrink-0">✓</span>
-                    <input :value="b" @input="bullets[i] = $event.target.value" type="text"
-                      :placeholder="`Benefício ${i + 1}`"
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-                    <button @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
-                  </div>
-                </template>
-              </div>
-              <button x-show="bullets.length < 6" @click="addBullet()"
-                class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
-              <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
-                <div class="flex gap-2 items-center">
-                  <input x-model="bgColor" type="color"
-                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                  <input x-model="bgColor" type="text" maxlength="7"
-                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
-                <div class="flex gap-2 items-center">
-                  <input x-model="accentColor" type="color"
-                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                  <input x-model="accentColor" type="text" maxlength="7"
-                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3 pt-1">
-              <button @click="salvar()"
-                :disabled="salvando"
-                class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
-                <span x-text="salvando ? 'Salvando...' : 'Salvar página'"></span>
-              </button>
-              <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
-            </div>
-          </div>
-        </template>
       </div>
 
       <!-- Portal do Cliente -->
