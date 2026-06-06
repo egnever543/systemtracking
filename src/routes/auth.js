@@ -80,14 +80,12 @@ auth.post('/register', async (c) => {
   }
 
   const hash = bcrypt.hashSync(senha, 12);
-  const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
   await supabase.from('users').insert({
     id: randomUUID(),
     email: email.trim().toLowerCase(),
     password_hash: hash,
     name: nome.trim(),
-    trial_ends_at: trialEndsAt,
     subscription_status: 'trialing',
   });
 
