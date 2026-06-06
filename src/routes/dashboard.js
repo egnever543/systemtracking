@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
 import { mapSite } from '../db/mappers.js';
 import { getSubscriptionBanner } from '../utils/subscription.js';
+import { getUserUsage } from '../utils/planUsage.js';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -74,6 +75,11 @@ dash.post('/sites/novo', async (c) => {
 
   if (!name || !domain || !whatsapp_number) {
     return c.redirect('/dashboard/sites/novo?erro=Preencha+os+campos+obrigat%C3%B3rios');
+  }
+
+  const usage = await getUserUsage(user.userId);
+  if (usage.siteLimitReached) {
+    return c.redirect(`/dashboard/sites/novo?erro=${encodeURIComponent(`Limite de sites atingido para o plano ${usage.plan.name}. Faça upgrade para criar mais sites.`)}`);
   }
 
   const id = randomUUID();

@@ -7,8 +7,16 @@ import { sendTiktokConversion } from '../services/tiktokCapi.js';
 import { sendEmail, conversionEmailHtml } from '../services/email.js';
 import { fireWebhook } from '../services/webhook.js';
 import { randomUUID, createHash, randomBytes } from 'crypto';
+import { getPlan } from '../config/plans.js';
+import { getUserUsage } from '../utils/planUsage.js';
 
 const api = new Hono();
+
+api.get('/user/plan', async (c) => {
+  const user = c.get('user');
+  const usage = await getUserUsage(user.userId);
+  return c.json(usage);
+});
 
 api.get('/conversions', async (c) => {
   const user = c.get('user');

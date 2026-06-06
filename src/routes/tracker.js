@@ -9,6 +9,7 @@ import { fireWebhook } from '../services/webhook.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getUserUsage } from '../utils/planUsage.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const viewsDir = join(__dirname, '../../views');
@@ -101,41 +102,30 @@ tracker.get('/r/:siteId', async (c) => {
 
   const trackingId = generateTrackingId();
 
-  await supabase.from('events').insert({
-    id: randomUUID(),
-    site_id: site.id,
-    tracking_id: trackingId,
-    fbclid: query.fbclid || null,
-    user_agent: c.req.header('user-agent') || null,
-    ip_hash: ipHash,
-    ip_original: ipOriginal,
-    page_url: c.req.header('referer') || null,
-    click_params: Object.keys(clickParams).length > 0 ? clickParams : null,
-    selected_number: selected.number,
-  });
+  // Check plan click limit
+  const usage = await getUserUsage(site.userId);
+  const overClickLimit = usage.clickLimitReached;
 
-  // Dispara Lead para Facebook CAPI em background se o site tiver Pixel configurado
-  if (site.fbPixelId && site.fbAccessToken) {
-    sendLeadEvent({
-      pixelId: site.fbPixelId,
-      accessToken: site.fbAccessToken,
-      testEventCode: site.fbTestEventCode || null,
-      trackingId,
-      pageUrl: c.req.header('referer') || null,
+  if (!overClickLimit) {
+    await supabase.from('events').insert({
+      id: randomUUID(),
+      site_id: site.id,
+      tracking_id: trackingId,
       fbclid: query.fbclid || null,
-      eventCreatedAt: new Date().toISOString(),
-      ipOriginal,
-      userAgent: c.req.header('user-agent') || null,
-    }).catch(() => {});
-  }
+      user_agent: c.req.header('user-agent') || null,
+      ip_hash: ipHash,
+      ip_original: ipOriginal,
+      page_url: c.req.header('referer') || null,
+      click_params: Object.keys(clickParams).length > 0 ? clickParams : null,
+      selected_number: selected.number,
+    });
 
-  // Pixels adicionais do Facebook — fire-and-forget
-  for (const px of (site.fbPixels || [])) {
-    if (px.pixelId && px.accessToken) {
+    // Dispara Lead para Facebook CAPI em background se o site tiver Pixel configurado
+    if (site.fbPixelId && site.fbAccessToken) {
       sendLeadEvent({
-        pixelId: px.pixelId,
-        accessToken: px.accessToken,
-        testEventCode: px.testEventCode || null,
+        pixelId: site.fbPixelId,
+        accessToken: site.fbAccessToken,
+        testEventCode: site.fbTestEventCode || null,
         trackingId,
         pageUrl: c.req.header('referer') || null,
         fbclid: query.fbclid || null,
@@ -144,23 +134,40 @@ tracker.get('/r/:siteId', async (c) => {
         userAgent: c.req.header('user-agent') || null,
       }).catch(() => {});
     }
-  }
 
-  // Webhook de clique
-  if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('click.created')) {
-    fireWebhook(site.webhookUrl, {
-      event: 'click.created',
-      siteId: site.id,
-      siteName: site.name,
-      data: {
-        trackingId,
-        selectedNumber: selected.number,
-        fbclid: query.fbclid || null,
-        pageUrl: c.req.header('referer') || null,
-        clickParams: Object.keys(clickParams).length > 0 ? clickParams : null,
-        createdAt: new Date().toISOString(),
-      },
-    }).catch(() => {});
+    // Pixels adicionais do Facebook — fire-and-forget
+    for (const px of (site.fbPixels || [])) {
+      if (px.pixelId && px.accessToken) {
+        sendLeadEvent({
+          pixelId: px.pixelId,
+          accessToken: px.accessToken,
+          testEventCode: px.testEventCode || null,
+          trackingId,
+          pageUrl: c.req.header('referer') || null,
+          fbclid: query.fbclid || null,
+          eventCreatedAt: new Date().toISOString(),
+          ipOriginal,
+          userAgent: c.req.header('user-agent') || null,
+        }).catch(() => {});
+      }
+    }
+
+    // Webhook de clique
+    if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('click.created')) {
+      fireWebhook(site.webhookUrl, {
+        event: 'click.created',
+        siteId: site.id,
+        siteName: site.name,
+        data: {
+          trackingId,
+          selectedNumber: selected.number,
+          fbclid: query.fbclid || null,
+          pageUrl: c.req.header('referer') || null,
+          clickParams: Object.keys(clickParams).length > 0 ? clickParams : null,
+          createdAt: new Date().toISOString(),
+        },
+      }).catch(() => {});
+    }
   }
 
   const destType = selected.destinationType || 'whatsapp';

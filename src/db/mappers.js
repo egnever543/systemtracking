@@ -19,6 +19,8 @@ export const mapUser = (u) => !u ? null : {
   subscriptionExpiresAt: u.subscription_expires_at,
   mpSubscriptionId: u.mp_subscription_id,
   logoUrl: u.logo_url ?? null,
+  planSlug: u.plan_slug ?? 'trial',
+  billingCycle: u.billing_cycle ?? 'monthly',
 };
 
 export const mapSite = (s) => !s ? null : {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Assinatura — WA CAPI Tracker</title>
+  <title>Planos — WA CAPI Tracker</title>
   <script>if(localStorage.getItem('theme')==='dark'||(!localStorage.getItem('theme')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { wa: '#25D366', 'wa-dark': '#128C7E' } } } }</script>
@@ -35,94 +35,78 @@
   </nav>
   {{subscriptionBanner}}
 
-  <main class="max-w-lg mx-auto px-4 py-10">
-    <h1 class="text-xl font-bold text-gray-900 mb-2">Assinatura</h1>
-    <p class="text-gray-500 text-sm mb-6">Gerencie seu plano no WA CAPI Tracker.</p>
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-xl font-bold text-gray-900">Planos e Assinatura</h1>
+      <p class="text-gray-500 text-sm">Gerencie seu plano no WA CAPI Tracker.</p>
+    </div>
 
     <script>
-      const params = new URLSearchParams(window.location.search);
-      const erro = params.get('erro');
-      const msg = params.get('msg');
-      if (erro) document.write('<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">' + decodeURIComponent(erro) + '<\/div>');
-      if (msg)  document.write('<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">' + decodeURIComponent(msg) + '<\/div>');
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const erro = params.get('erro');
+        const msg = params.get('msg');
+        if (erro) document.write('<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">' + decodeURIComponent(erro) + '<\/div>');
+        if (msg)  document.write('<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">' + decodeURIComponent(msg) + '<\/div>');
+      })();
     </script>
 
     <!-- Status: trial ativo -->
-    <div id="status-trialing" style="display:none" class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
-      <div class="flex items-center gap-3 mb-2">
-        <span class="text-2xl">⏳</span>
-        <div>
-          <p class="font-semibold text-amber-900">Período de teste</p>
-          <p class="text-sm text-amber-700">Seu trial termina em <strong id="days-left"></strong> dia(s).</p>
-        </div>
+    <div id="status-trialing" style="display:none" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+      <span class="text-xl">⏳</span>
+      <div>
+        <p class="font-semibold text-amber-900 text-sm">Período de teste</p>
+        <p class="text-xs text-amber-700">Seu trial termina em <strong id="days-left"></strong> dia(s). Assine para continuar sem interrupções.</p>
       </div>
-      <p class="text-xs text-amber-600">Assine antes do fim do trial para continuar usando sem interrupções.</p>
     </div>
 
     <!-- Status: trial expirado -->
-    <div id="status-trial-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">❌</span>
-        <div>
-          <p class="font-semibold text-red-900">Trial expirado</p>
-          <p class="text-sm text-red-700">Seu período de teste acabou. Assine para continuar usando.</p>
-        </div>
+    <div id="status-trial-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+      <span class="text-xl">❌</span>
+      <div>
+        <p class="font-semibold text-red-900 text-sm">Trial expirado</p>
+        <p class="text-xs text-red-700">Seu período de teste acabou. Assine para continuar usando.</p>
       </div>
     </div>
 
     <!-- Status: ativo -->
-    <div id="status-active" style="display:none" class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">✅</span>
-        <div>
-          <p class="font-semibold text-green-900">Assinatura ativa</p>
-          <p class="text-sm text-green-700" id="expires-at-label"></p>
-        </div>
+    <div id="status-active" style="display:none" class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+      <span class="text-xl">✅</span>
+      <div>
+        <p class="font-semibold text-green-900 text-sm">Assinatura ativa</p>
+        <p class="text-xs text-green-700" id="expires-at-label"></p>
       </div>
     </div>
 
     <!-- Status: expirado -->
-    <div id="status-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">❌</span>
-        <div>
-          <p class="font-semibold text-red-900">Assinatura expirada</p>
-          <p class="text-sm text-red-700">Renove sua assinatura para continuar usando.</p>
-        </div>
+    <div id="status-expired" style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 flex items-center gap-3">
+      <span class="text-xl">❌</span>
+      <div>
+        <p class="font-semibold text-red-900 text-sm">Assinatura expirada</p>
+        <p class="text-xs text-red-700">Renove sua assinatura para continuar usando.</p>
       </div>
     </div>
 
-    <!-- Plano -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <p class="font-semibold text-gray-900">{{planName}}</p>
-          <p class="text-sm text-gray-500">Cobrança mensal automática</p>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-gray-900">R$ {{planPrice}}</p>
-          <p class="text-xs text-gray-400">/mês</p>
-        </div>
-      </div>
-      <ul class="space-y-2 text-sm text-gray-600 mb-5">
-        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Rastreamento ilimitado de cliques</li>
-        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Envio automático para o Facebook CAPI</li>
-        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Sites ilimitados</li>
-        <li class="flex items-center gap-2"><span class="text-wa">✓</span> Dashboard completo</li>
-      </ul>
+    <!-- Current plan + usage card -->
+    <div id="usage-card" class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+      <p class="text-xs text-gray-400 mb-2">Carregando uso do plano...</p>
+    </div>
 
-      <div id="subscribe-btn-wrapper">
-        <form method="POST" action="/billing/subscribe">
-          <button type="submit"
-            class="w-full bg-wa hover:bg-wa-dark text-white font-semibold py-3 rounded-xl transition-colors">
-            Assinar agora via Mercado Pago
-          </button>
-        </form>
-      </div>
+    <!-- Billing cycle toggle -->
+    <div class="flex items-center justify-center gap-3 mb-6">
+      <button id="btn-monthly" onclick="setCycle('monthly')"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-wa text-white">
+        Mensal
+      </button>
+      <button id="btn-annual" onclick="setCycle('annual')"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:border-gray-300">
+        Anual &mdash; 2 meses grátis
+      </button>
+    </div>
 
-      <div id="active-msg" style="display:none" class="text-center text-sm text-gray-500 py-2">
-        Sua assinatura está ativa. Gerencie pelo Mercado Pago.
-      </div>
+    <!-- Plan cards -->
+    <div id="plan-cards" class="grid md:grid-cols-3 gap-5 mb-8">
+      {{planCardsHtml}}
     </div>
 
     <p class="text-xs text-center text-gray-400">
@@ -134,24 +118,104 @@
     const STATUS = '{{subscriptionStatus}}';
     const DAYS_LEFT = parseInt('{{daysLeftTrial}}') || 0;
     const EXPIRES_AT = '{{subscriptionExpiresAt}}';
+    const PLAN_DATA = JSON.parse('{{planDataJSON}}');
 
+    // Show subscription status
     if (STATUS === 'active') {
-      document.getElementById('status-active').style.display = 'block';
+      document.getElementById('status-active').style.display = 'flex';
       document.getElementById('expires-at-label').textContent = EXPIRES_AT
         ? 'Próxima cobrança: ' + EXPIRES_AT
         : 'Assinatura ativa.';
-      document.getElementById('subscribe-btn-wrapper').style.display = 'none';
-      document.getElementById('active-msg').style.display = 'block';
     } else if (STATUS === 'trialing') {
       if (DAYS_LEFT > 0) {
-        document.getElementById('status-trialing').style.display = 'block';
+        document.getElementById('status-trialing').style.display = 'flex';
         document.getElementById('days-left').textContent = DAYS_LEFT;
       } else {
-        document.getElementById('status-trial-expired').style.display = 'block';
+        document.getElementById('status-trial-expired').style.display = 'flex';
       }
     } else if (STATUS === 'expired') {
-      document.getElementById('status-expired').style.display = 'block';
+      document.getElementById('status-expired').style.display = 'flex';
     }
+
+    // Load usage card
+    (async function() {
+      try {
+        const res = await fetch('/api/user/plan');
+        if (!res.ok) return;
+        const d = await res.json();
+        const plan = d.plan;
+        const used = d.clicksThisMonth;
+        const limit = plan.clickLimit;
+        const cycleLabel = d.billingCycle === 'annual' ? 'Anual' : 'Mensal';
+
+        let barHtml = '';
+        let clicksLabel = '';
+        if (limit === -1) {
+          clicksLabel = used.toLocaleString('pt-BR') + ' cliques (ilimitado)';
+          barHtml = '<div class="w-full bg-gray-100 rounded-full h-1.5"><div class="h-1.5 rounded-full bg-green-500" style="width:20%"></div></div>';
+        } else {
+          const pct = Math.min(100, Math.round((used / limit) * 100));
+          const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-green-500';
+          clicksLabel = used.toLocaleString('pt-BR') + ' / ' + limit.toLocaleString('pt-BR');
+          barHtml = `<div class="w-full bg-gray-100 rounded-full h-1.5"><div class="h-1.5 rounded-full ${barColor} transition-all" style="width:${pct}%"></div></div>`;
+        }
+
+        const sl = plan.siteLimit;
+        const sitesLabel = sl === -1 ? d.siteCount + ' sites (ilimitado)' : d.siteCount + ' / ' + sl + ' sites';
+
+        document.getElementById('usage-card').innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <span class="text-sm font-semibold text-gray-900">${plan.name}</span>
+              <span class="ml-2 text-xs text-gray-400">&middot; ${cycleLabel}</span>
+            </div>
+            <span class="text-xs text-gray-400">Uso este mês</span>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="flex-1">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Cliques este mês</span>
+                <span>${clicksLabel}</span>
+              </div>
+              ${barHtml}
+            </div>
+            <div class="text-xs text-gray-500 whitespace-nowrap">${sitesLabel}</div>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('usage-card').innerHTML = '<p class="text-xs text-gray-400">Erro ao carregar uso do plano.</p>';
+      }
+    })();
+
+    // Billing cycle toggle
+    let currentCycle = PLAN_DATA.billingCycle || 'monthly';
+
+    function setCycle(cycle) {
+      currentCycle = cycle;
+      const btnMonthly = document.getElementById('btn-monthly');
+      const btnAnnual = document.getElementById('btn-annual');
+      if (cycle === 'annual') {
+        btnAnnual.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-wa text-white';
+        btnMonthly.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:border-gray-300';
+      } else {
+        btnMonthly.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-wa text-white';
+        btnAnnual.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:border-gray-300';
+      }
+      // Show/hide monthly vs annual prices
+      document.querySelectorAll('.price-monthly').forEach(el => {
+        el.style.display = cycle === 'annual' ? 'none' : 'block';
+      });
+      document.querySelectorAll('.price-annual').forEach(el => {
+        el.style.display = cycle === 'annual' ? 'block' : 'none';
+      });
+      // Update cycle hidden inputs
+      document.querySelectorAll('.cycle-input').forEach(el => {
+        el.value = cycle;
+      });
+    }
+
+    // Initialize toggle to server-side billing cycle
+    setCycle(currentCycle);
   </script>
 </body>
 </html>
