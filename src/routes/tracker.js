@@ -5,6 +5,7 @@ import { mapSite, mapSiteNumber } from '../db/mappers.js';
 import { randomUUID, createHash } from 'crypto';
 import { generateTrackingId } from '../services/idGenerator.js';
 import { sendLeadEvent } from '../services/facebookCapi.js';
+import { fireWebhook } from '../services/webhook.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -97,6 +98,23 @@ tracker.get('/r/:siteId', async (c) => {
       eventCreatedAt: new Date().toISOString(),
       ipOriginal,
       userAgent: c.req.header('user-agent') || null,
+    }).catch(() => {});
+  }
+
+  // Webhook de clique
+  if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('click.created')) {
+    fireWebhook(site.webhookUrl, {
+      event: 'click.created',
+      siteId: site.id,
+      siteName: site.name,
+      data: {
+        trackingId,
+        selectedNumber: selected.number,
+        fbclid: query.fbclid || null,
+        pageUrl: c.req.header('referer') || null,
+        clickParams: Object.keys(clickParams).length > 0 ? clickParams : null,
+        createdAt: new Date().toISOString(),
+      },
     }).catch(() => {});
   }
 

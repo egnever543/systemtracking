@@ -78,6 +78,11 @@
               class="px-5 py-2.5 text-sm -mb-px transition-colors">
         Pré-Venda
       </button>
+      <button @click="aba = 'integracoes'"
+              :class="aba === 'integracoes' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
+              class="px-5 py-2.5 text-sm -mb-px transition-colors">
+        Integrações
+      </button>
       <button @click="aba = 'configuracoes'"
               :class="aba === 'configuracoes' ? 'border-b-2 border-wa text-wa font-semibold' : 'text-gray-500 hover:text-gray-700'"
               class="px-5 py-2.5 text-sm -mb-px transition-colors">
@@ -506,6 +511,82 @@
       </div>
     </div>
 
+    <!-- ===== TAB: INTEGRAÇÕES ===== -->
+    <div x-show="aba === 'integracoes'">
+
+      <!-- Webhook -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5" x-data="webhookEditor()" x-init="init()">
+        <div class="mb-4">
+          <h2 class="font-semibold text-gray-900">Webhook</h2>
+          <p class="text-sm text-gray-500 mt-0.5">Receba uma notificação HTTP POST em qualquer URL quando os eventos selecionados ocorrerem neste site.</p>
+        </div>
+
+        <!-- URL -->
+        <div class="mb-4">
+          <label class="block text-xs font-medium text-gray-700 mb-1">URL do endpoint <span class="text-red-400">*</span></label>
+          <input x-model="webhookUrl" type="url" placeholder="https://seu-servidor.com/webhook"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa font-mono" />
+        </div>
+
+        <!-- Eventos -->
+        <div class="mb-5">
+          <p class="text-xs font-medium text-gray-700 mb-2">Disparar quando:</p>
+          <div class="space-y-2">
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" x-model="events" value="conversion.created"
+                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-wa focus:ring-wa cursor-pointer" />
+              <div>
+                <span class="text-sm text-gray-800 font-medium">Conversão registrada</span>
+                <span class="ml-2 text-xs text-gray-400 font-mono">conversion.created</span>
+                <p class="text-xs text-gray-500 mt-0.5">Disparado toda vez que uma venda é registrada para este site.</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" x-model="events" value="click.created"
+                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-wa focus:ring-wa cursor-pointer" />
+              <div>
+                <span class="text-sm text-gray-800 font-medium">Clique no link</span>
+                <span class="ml-2 text-xs text-gray-400 font-mono">click.created</span>
+                <p class="text-xs text-gray-500 mt-0.5">Disparado a cada clique no link de rastreamento. Pode gerar alto volume.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Payload de exemplo -->
+        <details class="mb-5 bg-gray-50 rounded-lg border border-gray-100">
+          <summary class="px-3 py-2 text-xs font-medium text-gray-600 cursor-pointer select-none">Ver exemplo de payload</summary>
+          <pre class="px-3 pb-3 text-xs text-gray-600 overflow-x-auto leading-relaxed"><code>{
+  "event": "conversion.created",
+  "siteId": "uuid-do-site",
+  "siteName": "Meu Site",
+  "data": {
+    "trackingId": "WA-XXXXXX",
+    "value": 150.00,
+    "currency": "BRL",
+    "selectedNumber": "5511999990000",
+    "fbclid": "...",
+    "pageUrl": "https://...",
+    "registeredAt": "2026-06-06T12:00:00.000Z"
+  }
+}</code></pre>
+        </details>
+
+        <!-- Ações -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <button @click="salvar()" :disabled="salvando"
+            class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+            <span x-text="salvando ? 'Salvando...' : 'Salvar'"></span>
+          </button>
+          <button @click="testar()" :disabled="testando || !webhookUrl"
+            class="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-40">
+            <span x-text="testando ? 'Enviando...' : 'Testar webhook'"></span>
+          </button>
+          <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== TAB: CONFIGURAÇÕES ===== -->
     <div x-show="aba === 'configuracoes'">
 
@@ -844,6 +925,51 @@
         },
         toUnix(iso) {
           return iso ? Math.floor(new Date(iso).getTime() / 1000).toString() : '';
+        },
+      };
+    }
+
+    function webhookEditor() {
+      return {
+        webhookUrl: SITE_DATA.webhookUrl || '',
+        events: Array.isArray(SITE_DATA.webhookEvents) ? [...SITE_DATA.webhookEvents] : [],
+        salvando: false,
+        testando: false,
+        msg: '',
+        msgOk: true,
+        init() {},
+        async salvar() {
+          this.salvando = true;
+          this.msg = '';
+          const res = await fetch(`/api/sites/${SITE_ID}/webhook`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ webhookUrl: this.webhookUrl, events: this.events }),
+          });
+          const data = await res.json();
+          this.salvando = false;
+          this.msgOk = res.ok;
+          this.msg = res.ok ? '✅ Salvo!' : (data.erro || 'Erro ao salvar');
+          setTimeout(() => { this.msg = ''; }, 3000);
+        },
+        async testar() {
+          if (!this.webhookUrl) return;
+          this.testando = true;
+          this.msg = '';
+          const res = await fetch(`/api/sites/${SITE_ID}/webhook/test`, { method: 'POST' });
+          const data = await res.json();
+          this.testando = false;
+          if (data.skipped) {
+            this.msgOk = false;
+            this.msg = 'Salve uma URL primeiro.';
+          } else if (data.success) {
+            this.msgOk = true;
+            this.msg = `✅ Resposta ${data.status} recebida`;
+          } else {
+            this.msgOk = false;
+            this.msg = `❌ Falhou: ${data.error || 'sem resposta'}`;
+          }
+          setTimeout(() => { this.msg = ''; }, 5000);
         },
       };
     }

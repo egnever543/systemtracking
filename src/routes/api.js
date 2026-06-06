@@ -5,6 +5,7 @@ import { sendPurchaseEvent, sendConversionEvent } from '../services/facebookCapi
 import { sendGoogleConversion } from '../services/googleAdsCapi.js';
 import { sendTiktokConversion } from '../services/tiktokCapi.js';
 import { sendEmail, conversionEmailHtml } from '../services/email.js';
+import { fireWebhook } from '../services/webhook.js';
 import { randomUUID, createHash, randomBytes } from 'crypto';
 
 const api = new Hono();
@@ -204,6 +205,24 @@ api.post('/conversions', async (c) => {
   if (insertErr) {
     console.error('[POST /api/conversions] insert error:', insertErr);
     return c.json({ erro: 'Erro ao salvar conversão: ' + insertErr.message }, 500);
+  }
+
+  // Webhook
+  if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('conversion.created')) {
+    fireWebhook(site.webhookUrl, {
+      event: 'conversion.created',
+      siteId: site.id,
+      siteName: site.name,
+      data: {
+        trackingId: event.trackingId,
+        value: finalValue,
+        currency: finalCurrency,
+        selectedNumber: rawEvent?.selected_number ?? null,
+        fbclid: event.fbclid ?? null,
+        pageUrl: event.pageUrl ?? null,
+        registeredAt: new Date().toISOString(),
+      },
+    }).catch(() => {});
   }
 
   // Email de notificação somente para Purchase
@@ -596,6 +615,48 @@ api.patch('/sites/:siteId/client-access', async (c) => {
 
   if (error) return c.json({ erro: error.message }, 500);
   return c.json({ clientAccessEnabled: enabled });
+});
+
+const VALID_WEBHOOK_EVENTS = ['conversion.created', 'click.created'];
+
+api.patch('/sites/:siteId/webhook', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: existing } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!existing) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const updates = {};
+  if (body.webhookUrl !== undefined) updates.webhook_url = body.webhookUrl?.trim() || null;
+  if (Array.isArray(body.events)) updates.webhook_events = body.events.filter(e => VALID_WEBHOOK_EVENTS.includes(e));
+
+  const { error } = await supabase.from('sites').update(updates).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ sucesso: true });
+});
+
+api.post('/sites/:siteId/webhook/test', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('*')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  const site = mapSite(rawSite);
+  if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
+  if (!site.webhookUrl) return c.json({ erro: 'Nenhuma URL configurada' }, 400);
+
+  const result = await fireWebhook(site.webhookUrl, {
+    event: 'test',
+    siteId: site.id,
+    siteName: site.name,
+    data: { message: 'Teste de webhook — WA CAPI Tracker', timestamp: new Date().toISOString() },
+  });
+
+  return c.json(result);
 });
 
 export default api;
