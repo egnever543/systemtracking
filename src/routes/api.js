@@ -484,18 +484,16 @@ api.get('/sites/:siteId/chart', async (c) => {
   since.setDate(since.getDate() - (days - 1));
   since.setHours(0, 0, 0, 0);
 
-  const { data: events } = await supabase.from('events')
-    .select('id, created_at')
-    .eq('site_id', siteId)
-    .gte('created_at', since.toISOString());
-
-  const eventIds = (events || []).map(e => e.id);
-  let convSet = new Set();
-  if (eventIds.length > 0) {
-    const { data: convs } = await supabase.from('conversions')
-      .select('event_id').in('event_id', eventIds);
-    convSet = new Set((convs || []).map(cv => cv.event_id));
-  }
+  const [{ data: events }, { data: convs }] = await Promise.all([
+    supabase.from('events')
+      .select('created_at')
+      .eq('site_id', siteId)
+      .gte('created_at', since.toISOString()),
+    supabase.from('conversions')
+      .select('registered_at')
+      .eq('site_id', siteId)
+      .gte('registered_at', since.toISOString()),
+  ]);
 
   const buckets = {};
   for (let i = 0; i < days; i++) {
@@ -506,10 +504,11 @@ api.get('/sites/:siteId/chart', async (c) => {
   }
   for (const ev of (events || [])) {
     const key = new Date(ev.created_at).toISOString().slice(0, 10);
-    if (buckets[key]) {
-      buckets[key].cliques++;
-      if (convSet.has(ev.id)) buckets[key].conversoes++;
-    }
+    if (buckets[key]) buckets[key].cliques++;
+  }
+  for (const cv of (convs || [])) {
+    const key = new Date(cv.registered_at).toISOString().slice(0, 10);
+    if (buckets[key]) buckets[key].conversoes++;
   }
 
   return c.json(Object.values(buckets));
