@@ -450,9 +450,10 @@ api.post('/sites/:siteId/numbers', async (c) => {
   const { data, error } = await supabase.from('site_numbers').insert({
     id: randomUUID(),
     site_id: siteId,
-    number: String(body.number).replace(/\D/g, ''),
+    number: body.destinationType === 'whatsapp' ? String(body.number || '').replace(/\D/g, '') : String(body.number || '').trim(),
     label: body.label || null,
     weight: Math.max(1, parseInt(body.weight) || 50),
+    destination_type: ['whatsapp', 'whatsapp_group', 'url', 'telegram'].includes(body.destinationType) ? body.destinationType : 'whatsapp',
   }).select().maybeSingle();
 
   if (error) return c.json({ erro: error.message }, 500);
@@ -702,6 +703,53 @@ api.post('/sites/:siteId/webhook/test', async (c) => {
   });
 
   return c.json(result);
+});
+
+api.post('/sites/:siteId/logo', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  let formData;
+  try { formData = await c.req.formData(); } catch {
+    return c.json({ erro: 'Requisição inválida' }, 400);
+  }
+
+  const file = formData.get('logo');
+  if (!file || typeof file === 'string') return c.json({ erro: 'Arquivo não enviado' }, 400);
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type))
+    return c.json({ erro: 'Use JPG, PNG ou WebP (máx 2 MB)' }, 400);
+  if (file.size > 2 * 1024 * 1024) return c.json({ erro: 'Imagem deve ter no máximo 2 MB' }, 400);
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { error: bucketErr } = await supabase.storage.getBucket('site-logos');
+  if (bucketErr) await supabase.storage.createBucket('site-logos', { public: true });
+
+  const { error: upErr } = await supabase.storage.from('site-logos').upload(siteId, buffer, {
+    contentType: file.type,
+    upsert: true,
+  });
+  if (upErr) return c.json({ erro: `Erro no upload: ${upErr.message}` }, 500);
+
+  const { data: { publicUrl } } = supabase.storage.from('site-logos').getPublicUrl(siteId);
+  await supabase.from('sites').update({ site_logo_url: publicUrl }).eq('id', siteId);
+  return c.json({ logoUrl: publicUrl });
+});
+
+api.delete('/sites/:siteId/logo', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  await supabase.storage.from('site-logos').remove([siteId]);
+  await supabase.from('sites').update({ site_logo_url: null }).eq('id', siteId);
+  return c.json({ ok: true });
 });
 
 export default api;

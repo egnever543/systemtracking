@@ -146,18 +146,37 @@ tracker.get('/r/:siteId', async (c) => {
     }).catch(() => {});
   }
 
-  const msg = (site.defaultMessage || '') + ' [' + trackingId + ']';
-  const waUrl = 'https://wa.me/' + selected.number + '?text=' + encodeURIComponent(msg);
+  const destType = selected.destinationType || 'whatsapp';
+  let destUrl;
+  if (destType === 'url') {
+    try {
+      const u = new URL(selected.number);
+      for (const [k, v] of Object.entries(clickParams)) {
+        if (v && !u.searchParams.has(k)) u.searchParams.set(k, v);
+      }
+      destUrl = u.toString();
+    } catch {
+      destUrl = selected.number;
+    }
+  } else if (destType === 'telegram') {
+    const val = selected.number.trim();
+    destUrl = val.startsWith('http') ? val : `https://t.me/${val.replace(/^@/, '')}`;
+  } else if (destType === 'whatsapp_group') {
+    destUrl = selected.number;
+  } else {
+    const msg = (site.defaultMessage || '') + ' [' + trackingId + ']';
+    destUrl = 'https://wa.me/' + selected.number + '?text=' + encodeURIComponent(msg);
+  }
 
   const deliveryMode = site.deliveryMode || 'direct';
 
   if (deliveryMode === 'direct') {
-    return c.redirect(waUrl, 302);
+    return c.redirect(destUrl, 302);
   }
 
   // Shared setup for presell, form, vsl
   const { data: owner } = await supabase.from('users').select('logo_url').eq('id', site.userId).maybeSingle();
-  const logoUrl = owner?.logo_url || '';
+  const logoUrl = site.siteLogoUrl || owner?.logo_url || '';
   const bgColor = site.presellBgColor || '#0f172a';
   const accentColor = site.presellAccentColor || '#25D366';
 
@@ -190,7 +209,7 @@ tracker.get('/r/:siteId', async (c) => {
         .replaceAll('{{subtitleHtml}}', subtitleHtml)
         .replaceAll('{{bulletsHtml}}', bulletsHtml)
         .replaceAll('{{ctaText}}', escapeHtml(site.presellCtaText || 'Falar no WhatsApp'))
-        .replaceAll('{{whatsappUrl}}', waUrl);
+        .replaceAll('{{whatsappUrl}}', destUrl);
 
       return c.html(html);
     }
@@ -209,7 +228,7 @@ tracker.get('/r/:siteId', async (c) => {
         .replaceAll('{{subtitleHtml}}', subtitleHtml)
         .replaceAll('{{fieldsHtml}}', renderFormFields(site.formFields))
         .replaceAll('{{ctaText}}', escapeHtml(site.presellCtaText || 'Continuar no WhatsApp'))
-        .replaceAll('{{whatsappUrl}}', waUrl)
+        .replaceAll('{{whatsappUrl}}', destUrl)
         .replaceAll('{{trackingId}}', trackingId)
         .replaceAll('{{siteId}}', site.id);
 
@@ -218,7 +237,7 @@ tracker.get('/r/:siteId', async (c) => {
 
     case 'vsl': {
       const embedUrl = youtubeEmbedUrl(site.vslVideoUrl);
-      if (!embedUrl) return c.redirect(waUrl, 302);
+      if (!embedUrl) return c.redirect(destUrl, 302);
 
       let html = readFileSync(join(viewsDir, 'vsl.html'), 'utf-8');
       html = html
@@ -233,14 +252,14 @@ tracker.get('/r/:siteId', async (c) => {
         .replaceAll('{{subtitleHtml}}', subtitleHtml)
         .replaceAll('{{videoEmbedUrl}}', embedUrl)
         .replaceAll('{{ctaText}}', escapeHtml(site.presellCtaText || 'Falar no WhatsApp'))
-        .replaceAll('{{whatsappUrl}}', waUrl)
+        .replaceAll('{{whatsappUrl}}', destUrl)
         .replaceAll('{{delayMs}}', String((site.vslDelaySeconds || 0) * 1000));
 
       return c.html(html);
     }
 
     default:
-      return c.redirect(waUrl, 302);
+      return c.redirect(destUrl, 302);
   }
 });
 

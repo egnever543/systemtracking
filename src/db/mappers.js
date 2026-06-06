@@ -4,6 +4,7 @@ export const mapSiteNumber = (n) => !n ? null : {
   number: n.number,
   label: n.label,
   weight: n.weight,
+  destinationType: n.destination_type ?? 'whatsapp',
   createdAt: n.created_at,
 };
 
@@ -55,6 +56,7 @@ export const mapSite = (s) => !s ? null : {
   ],
   webhookUrl: s.webhook_url ?? null,
   webhookEvents: s.webhook_events ?? [],
+  siteLogoUrl: s.site_logo_url ?? null,
 };
 
 export const mapEvent = (e) => !e ? null : {
