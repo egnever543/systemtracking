@@ -129,6 +129,23 @@ tracker.get('/r/:siteId', async (c) => {
     }).catch(() => {});
   }
 
+  // Pixels adicionais do Facebook — fire-and-forget
+  for (const px of (site.fbPixels || [])) {
+    if (px.pixelId && px.accessToken) {
+      sendLeadEvent({
+        pixelId: px.pixelId,
+        accessToken: px.accessToken,
+        testEventCode: px.testEventCode || null,
+        trackingId,
+        pageUrl: c.req.header('referer') || null,
+        fbclid: query.fbclid || null,
+        eventCreatedAt: new Date().toISOString(),
+        ipOriginal,
+        userAgent: c.req.header('user-agent') || null,
+      }).catch(() => {});
+    }
+  }
+
   // Webhook de clique
   if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('click.created')) {
     fireWebhook(site.webhookUrl, {

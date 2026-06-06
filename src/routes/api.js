@@ -163,6 +163,29 @@ api.post('/conversions', async (c) => {
     });
   }
 
+  // Pixels adicionais do Facebook — fire-and-forget
+  const additionalPixels = site.fbPixels || [];
+  if (additionalPixels.length > 0 && event.fbclid) {
+    for (const px of additionalPixels) {
+      if (px.pixelId && px.accessToken) {
+        sendConversionEvent({
+          pixelId: px.pixelId,
+          accessToken: px.accessToken,
+          testEventCode: px.testEventCode || null,
+          trackingId: event.trackingId,
+          pageUrl: event.pageUrl,
+          fbclid: event.fbclid,
+          eventCreatedAt: event.createdAt,
+          ipOriginal: event.ipOriginal,
+          userAgent: event.userAgent,
+          eventName,
+          value: finalValue,
+          currency: finalCurrency,
+        }).catch(() => {});
+      }
+    }
+  }
+
   // Google Ads + TikTok: somente para Purchase e se veio do Google, fire-and-forget
   if (eventName === 'Purchase' && enviarGoogle) {
     Promise.all([
@@ -513,6 +536,136 @@ api.get('/sites/:siteId/chart', async (c) => {
   }
 
   return c.json(Object.values(buckets));
+});
+
+api.get('/sites/:siteId/utm-stats', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const [{ data: events }, { data: convs }] = await Promise.all([
+    supabase.from('events').select('id, click_params, created_at').eq('site_id', siteId),
+    supabase.from('conversions').select('event_id').eq('site_id', siteId),
+  ]);
+
+  const convSet = new Set((convs || []).map(cv => cv.event_id));
+  const stats = {};
+
+  for (const ev of (events || [])) {
+    const src = ev.click_params?.utm_source ?? null;
+    const cmp = ev.click_params?.utm_campaign ?? null;
+    const med = ev.click_params?.utm_medium ?? null;
+    const isAllNull = src === null && cmp === null && med === null;
+    const utmSource = isAllNull ? '(direto)' : src;
+    const utmCampaign = isAllNull ? null : cmp;
+    const utmMedium = isAllNull ? null : med;
+    const key = `${utmSource ?? ''}|${utmCampaign ?? ''}|${utmMedium ?? ''}`;
+    if (!stats[key]) stats[key] = { utmSource, utmCampaign, utmMedium, clicks: 0, conversions: 0 };
+    stats[key].clicks++;
+    if (convSet.has(ev.id)) stats[key].conversions++;
+  }
+
+  return c.json(
+    Object.values(stats)
+      .map(s => ({ ...s, taxa: s.clicks > 0 ? Math.round((s.conversions / s.clicks) * 100) : 0 }))
+      .sort((a, b) => b.clicks - a.clicks)
+  );
+});
+
+api.get('/sites/:siteId/time-heatmap', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const { data: events } = await supabase.from('events').select('created_at').eq('site_id', siteId);
+
+  // 7 rows (days 0–6), 24 cols (hours 0–23)
+  const matrix = Array.from({ length: 7 }, () => new Array(24).fill(0));
+
+  for (const ev of (events || [])) {
+    const d = new Date(ev.created_at);
+    const day = d.getUTCDay();
+    const hour = d.getUTCHours();
+    matrix[day][hour]++;
+  }
+
+  const maxVal = Math.max(...matrix.flat());
+
+  return c.json({
+    matrix,
+    maxVal,
+    dayLabels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+    hourLabels: Array.from({ length: 24 }, (_, i) => `${i}h`),
+  });
+});
+
+api.get('/sites/:siteId/pixels', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('*')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const site = mapSite(rawSite);
+  const primary = (site.fbPixelId || site.fbAccessToken)
+    ? { pixelId: site.fbPixelId, accessToken: site.fbAccessToken, testEventCode: site.fbTestEventCode || null }
+    : null;
+
+  return c.json({ primary, additional: site.fbPixels || [] });
+});
+
+api.post('/sites/:siteId/pixels', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('*')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const { label, pixelId, accessToken, testEventCode } = body;
+  if (!label || typeof label !== 'string' || !label.trim()) return c.json({ erro: 'Label é obrigatório' }, 400);
+  if (!pixelId || typeof pixelId !== 'string' || !pixelId.trim()) return c.json({ erro: 'Pixel ID é obrigatório' }, 400);
+  if (!accessToken || typeof accessToken !== 'string' || !accessToken.trim()) return c.json({ erro: 'Access Token é obrigatório' }, 400);
+
+  const current = rawSite.fb_pixels || [];
+  const updated = [...current, {
+    label: label.trim(),
+    pixelId: pixelId.trim(),
+    accessToken: accessToken.trim(),
+    testEventCode: testEventCode?.trim() || null,
+  }];
+
+  const { error } = await supabase.from('sites').update({ fb_pixels: updated }).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json(updated);
+});
+
+api.delete('/sites/:siteId/pixels/:index', async (c) => {
+  const user = c.get('user');
+  const { siteId, index: indexStr } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('fb_pixels')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const idx = parseInt(indexStr, 10);
+  const current = rawSite.fb_pixels || [];
+  if (isNaN(idx) || idx < 0 || idx >= current.length) return c.json({ erro: 'Índice inválido' }, 400);
+
+  const updated = current.filter((_, i) => i !== idx);
+  const { error } = await supabase.from('sites').update({ fb_pixels: updated }).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json(updated);
 });
 
 api.get('/sites/:siteId/numbers-stats', async (c) => {

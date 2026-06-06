@@ -112,6 +112,39 @@ client.get('/:token/api/chart', resolveToken, async (c) => {
   return c.json(Object.values(buckets));
 });
 
+client.get('/:token/api/utm-stats', resolveToken, async (c) => {
+  const site = c.get('site');
+  const siteId = site.id;
+
+  const [{ data: events }, { data: convs }] = await Promise.all([
+    supabase.from('events').select('id, click_params, created_at').eq('site_id', siteId),
+    supabase.from('conversions').select('event_id').eq('site_id', siteId),
+  ]);
+
+  const convSet = new Set((convs || []).map(cv => cv.event_id));
+  const stats = {};
+
+  for (const ev of (events || [])) {
+    const src = ev.click_params?.utm_source ?? null;
+    const cmp = ev.click_params?.utm_campaign ?? null;
+    const med = ev.click_params?.utm_medium ?? null;
+    const isAllNull = src === null && cmp === null && med === null;
+    const utmSource = isAllNull ? '(direto)' : src;
+    const utmCampaign = isAllNull ? null : cmp;
+    const utmMedium = isAllNull ? null : med;
+    const key = `${utmSource ?? ''}|${utmCampaign ?? ''}|${utmMedium ?? ''}`;
+    if (!stats[key]) stats[key] = { utmSource, utmCampaign, utmMedium, clicks: 0, conversions: 0 };
+    stats[key].clicks++;
+    if (convSet.has(ev.id)) stats[key].conversions++;
+  }
+
+  return c.json(
+    Object.values(stats)
+      .map(s => ({ ...s, taxa: s.clicks > 0 ? Math.round((s.conversions / s.clicks) * 100) : 0 }))
+      .sort((a, b) => b.clicks - a.clicks)
+  );
+});
+
 client.get('/:token/api/numbers-stats', resolveToken, async (c) => {
   const site = c.get('site');
   const siteId = site.id;

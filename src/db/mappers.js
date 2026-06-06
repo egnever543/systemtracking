@@ -57,6 +57,7 @@ export const mapSite = (s) => !s ? null : {
   webhookUrl: s.webhook_url ?? null,
   webhookEvents: s.webhook_events ?? [],
   siteLogoUrl: s.site_logo_url ?? null,
+  fbPixels: s.fb_pixels ?? [],
 };
 
 export const mapEvent = (e) => !e ? null : {

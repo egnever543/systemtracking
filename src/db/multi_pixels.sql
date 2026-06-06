@@ -1,0 +1,1 @@
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS fb_pixels JSONB DEFAULT '[]'::jsonb;
