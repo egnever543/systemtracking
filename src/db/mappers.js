@@ -46,6 +46,13 @@ export const mapSite = (s) => !s ? null : {
   presellCtaText: s.presell_cta_text ?? 'Falar no WhatsApp',
   presellBgColor: s.presell_bg_color ?? '#0f172a',
   presellAccentColor: s.presell_accent_color ?? '#25D366',
+  deliveryMode: s.delivery_mode ?? 'direct',
+  vslVideoUrl: s.vsl_video_url ?? '',
+  vslDelaySeconds: s.vsl_delay_seconds ?? 0,
+  formFields: s.form_fields ?? [
+    { type: 'name', label: 'Seu nome', required: true },
+    { type: 'phone', label: 'Seu telefone', required: true },
+  ],
   webhookUrl: s.webhook_url ?? null,
   webhookEvents: s.webhook_events ?? [],
 };

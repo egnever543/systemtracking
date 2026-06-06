@@ -377,6 +377,51 @@ api.patch('/sites/:siteId/presell', async (c) => {
   return c.json({ sucesso: true });
 });
 
+const VALID_DELIVERY_MODES = ['direct', 'presell', 'form', 'vsl'];
+const VALID_FIELD_TYPES = ['name', 'email', 'phone', 'text'];
+
+api.patch('/sites/:siteId/delivery', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: existing } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!existing) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const mode = body.mode;
+  if (!VALID_DELIVERY_MODES.includes(mode)) return c.json({ erro: 'Modo de entrega inválido' }, 400);
+
+  const updates = {
+    delivery_mode: mode,
+    presell_enabled: mode === 'presell',
+  };
+
+  if (body.title !== undefined) updates.presell_title = body.title || null;
+  if (body.subtitle !== undefined) updates.presell_subtitle = body.subtitle || null;
+  if (Array.isArray(body.bullets)) updates.presell_bullets = body.bullets.filter(b => b?.trim()).slice(0, 6);
+  if (body.ctaText !== undefined) updates.presell_cta_text = body.ctaText || 'Falar no WhatsApp';
+  if (body.bgColor !== undefined) updates.presell_bg_color = body.bgColor || '#0f172a';
+  if (body.accentColor !== undefined) updates.presell_accent_color = body.accentColor || '#25D366';
+  if (body.vslVideoUrl !== undefined) updates.vsl_video_url = body.vslVideoUrl || null;
+  if (body.vslDelaySeconds !== undefined) {
+    const delay = parseInt(body.vslDelaySeconds) || 0;
+    updates.vsl_delay_seconds = Math.max(0, Math.min(300, delay));
+  }
+  if (Array.isArray(body.formFields)) {
+    updates.form_fields = body.formFields
+      .filter(f => VALID_FIELD_TYPES.includes(f.type))
+      .slice(0, 8)
+      .map(f => ({ type: f.type, label: String(f.label || f.type), required: !!f.required }));
+  }
+
+  const { error } = await supabase.from('sites').update(updates).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ sucesso: true });
+});
+
 api.get('/sites/:siteId/numbers', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();

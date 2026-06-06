@@ -416,98 +416,176 @@
     <!-- ===== TAB: PRÉ-VENDA ===== -->
     <div x-show="aba === 'presell'">
       <div class="bg-white rounded-xl border border-gray-100 p-5"
-           x-data="presellEditor()" x-init="init()">
-        <div class="flex items-center justify-between mb-1">
-          <div>
-            <h2 class="font-semibold text-gray-900">Página de Pré-Venda</h2>
-            <p class="text-xs text-gray-400 mt-0.5">Exibe uma página personalizada antes de ir ao WhatsApp — ideal para anúncios.</p>
-          </div>
-          <button @click="toggleEnabled()"
-            :class="enabled ? 'bg-wa' : 'bg-gray-200'"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
-            <span :class="enabled ? 'translate-x-6' : 'translate-x-1'"
-                  class="inline-block h-4 w-4 rounded-full bg-white transition-transform shadow"></span>
+           x-data="deliveryEditor()">
+        <div class="mb-5">
+          <h2 class="font-semibold text-gray-900">Modo de Entrega</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Escolha o que acontece quando alguém clica no link de rastreamento.</p>
+        </div>
+
+        <!-- Mode selector -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <button type="button" @click="mode = 'direct'"
+            :class="mode === 'direct' ? 'border-2 border-wa bg-wa/5' : 'border-2 border-gray-200 hover:border-gray-300'"
+            class="rounded-xl p-4 text-left transition-colors focus:outline-none">
+            <div class="text-2xl mb-1">↪</div>
+            <div class="text-sm font-semibold text-gray-900">Direto</div>
+            <div class="text-xs text-gray-500 mt-0.5">Vai direto ao WhatsApp</div>
+          </button>
+          <button type="button" @click="mode = 'presell'"
+            :class="mode === 'presell' ? 'border-2 border-wa bg-wa/5' : 'border-2 border-gray-200 hover:border-gray-300'"
+            class="rounded-xl p-4 text-left transition-colors focus:outline-none">
+            <div class="text-2xl mb-1">📄</div>
+            <div class="text-sm font-semibold text-gray-900">Pré-Venda</div>
+            <div class="text-xs text-gray-500 mt-0.5">Página com texto e benefícios</div>
+          </button>
+          <button type="button" @click="mode = 'form'"
+            :class="mode === 'form' ? 'border-2 border-wa bg-wa/5' : 'border-2 border-gray-200 hover:border-gray-300'"
+            class="rounded-xl p-4 text-left transition-colors focus:outline-none">
+            <div class="text-2xl mb-1">📋</div>
+            <div class="text-sm font-semibold text-gray-900">Formulário</div>
+            <div class="text-xs text-gray-500 mt-0.5">Coleta dados antes do WhatsApp</div>
+          </button>
+          <button type="button" @click="mode = 'vsl'"
+            :class="mode === 'vsl' ? 'border-2 border-wa bg-wa/5' : 'border-2 border-gray-200 hover:border-gray-300'"
+            class="rounded-xl p-4 text-left transition-colors focus:outline-none">
+            <div class="text-2xl mb-1">▶</div>
+            <div class="text-sm font-semibold text-gray-900">VSL</div>
+            <div class="text-xs text-gray-500 mt-0.5">Vídeo antes do WhatsApp</div>
           </button>
         </div>
 
-        <template x-if="enabled">
-          <div class="mt-5 space-y-4">
-            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-              <span class="text-xs text-gray-500">Prévia da página</span>
-              <a :href="previewUrl" target="_blank"
-                 class="text-xs text-wa font-medium hover:underline">Abrir →</a>
-            </div>
+        <!-- Direct info -->
+        <div x-show="mode === 'direct'" class="mb-5 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <p class="text-sm text-gray-600">O link redireciona diretamente para o WhatsApp sem nenhuma página intermediária.</p>
+        </div>
 
+        <!-- Common settings (not direct) -->
+        <div x-show="mode !== 'direct'" class="space-y-4 mb-5">
+          <div class="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+            <span class="text-xs text-gray-500">Prévia da página</span>
+            <a :href="previewUrl" target="_blank" class="text-xs text-wa font-medium hover:underline">Abrir →</a>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Título principal</label>
+            <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Título principal <span class="text-red-400">*</span></label>
-              <input x-model="title" type="text" placeholder="Ex: Transforme sua vida em 30 dias"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
-              <textarea x-model="subtitle" rows="2" placeholder="Uma breve descrição da oferta ou do produto..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa resize-none"></textarea>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
-              <div class="space-y-2">
-                <template x-for="(b, i) in bullets" :key="i">
-                  <div class="flex gap-2 items-center">
-                    <span class="text-wa text-sm shrink-0">✓</span>
-                    <input :value="b" @input="bullets[i] = $event.target.value" type="text"
-                      :placeholder="`Benefício ${i + 1}`"
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-                    <button @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
-                  </div>
-                </template>
-              </div>
-              <button x-show="bullets.length < 6" @click="addBullet()"
-                class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
-              <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
-                <div class="flex gap-2 items-center">
-                  <input x-model="bgColor" type="color"
-                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                  <input x-model="bgColor" type="text" maxlength="7"
-                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
-                <div class="flex gap-2 items-center">
-                  <input x-model="accentColor" type="color"
-                    class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
-                  <input x-model="accentColor" type="text" maxlength="7"
-                    class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
-                </div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Cor de fundo</label>
+              <div class="flex gap-2 items-center">
+                <input x-model="bgColor" type="color"
+                  class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                <input x-model="bgColor" type="text" maxlength="7"
+                  class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
               </div>
             </div>
-
-            <div class="flex items-center gap-3 pt-1">
-              <button @click="salvar()"
-                :disabled="salvando"
-                class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
-                <span x-text="salvando ? 'Salvando...' : 'Salvar página'"></span>
-              </button>
-              <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Cor de destaque</label>
+              <div class="flex gap-2 items-center">
+                <input x-model="accentColor" type="color"
+                  class="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5" />
+                <input x-model="accentColor" type="text" maxlength="7"
+                  class="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+              </div>
             </div>
           </div>
-        </template>
+        </div>
 
-        <template x-if="!enabled">
-          <p class="mt-4 text-sm text-gray-400">Ative o toggle acima para configurar a página de pré-venda.</p>
-        </template>
+        <!-- Presell: bullets -->
+        <div x-show="mode === 'presell'" class="mb-5">
+          <label class="block text-xs font-medium text-gray-700 mb-2">Benefícios <span class="text-gray-400 font-normal">(até 6)</span></label>
+          <div class="space-y-2">
+            <template x-for="(b, i) in bullets" :key="i">
+              <div class="flex gap-2 items-center">
+                <span class="text-wa text-sm shrink-0">✓</span>
+                <input :value="b" @input="bullets[i] = $event.target.value" type="text"
+                  :placeholder="`Benefício ${i + 1}`"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                <button type="button" @click="removeBullet(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+              </div>
+            </template>
+          </div>
+          <button type="button" x-show="bullets.length < 6" @click="addBullet()"
+            class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar benefício</button>
+        </div>
+
+        <!-- Form: fields editor -->
+        <div x-show="mode === 'form'" class="mb-5">
+          <label class="block text-xs font-medium text-gray-700 mb-2">Campos do formulário <span class="text-gray-400 font-normal">(até 8)</span></label>
+          <div class="space-y-2">
+            <template x-for="(f, i) in formFields" :key="i">
+              <div class="flex gap-2 items-center flex-wrap">
+                <select :value="f.type" @change="formFields[i].type = $event.target.value"
+                  class="px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa bg-white">
+                  <option value="name">Nome</option>
+                  <option value="email">E-mail</option>
+                  <option value="phone">Telefone</option>
+                  <option value="text">Texto livre</option>
+                </select>
+                <input :value="f.label" @input="formFields[i].label = $event.target.value" type="text"
+                  placeholder="Label do campo"
+                  class="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <input type="checkbox" :checked="f.required" @change="formFields[i].required = $event.target.checked"
+                    class="h-3.5 w-3.5 rounded border-gray-300 text-wa focus:ring-wa" />
+                  Obrigatório
+                </label>
+                <button type="button" @click="removeField(i)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+              </div>
+            </template>
+          </div>
+          <button type="button" x-show="formFields.length < 8" @click="addField()"
+            class="mt-2 text-xs text-wa font-medium hover:underline">+ Adicionar campo</button>
+        </div>
+
+        <!-- VSL: video URL + delay -->
+        <div x-show="mode === 'vsl'" class="mb-5 space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">URL do vídeo YouTube</label>
+            <input x-model="vslVideoUrl" type="url" placeholder="https://www.youtube.com/watch?v=..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa font-mono" />
+            <p class="text-xs text-gray-400 mt-1">Aceita links normais do YouTube (youtube.com/watch ou youtu.be).</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Atraso para mostrar o botão
+              <span class="font-normal text-gray-500 ml-1" x-text="vslDelay > 0 ? vslDelay + 's' : 'imediato'"></span>
+            </label>
+            <div class="flex items-center gap-3">
+              <input x-model="vslDelay" type="range" min="0" max="300" step="5"
+                class="flex-1 accent-wa" />
+              <input x-model="vslDelay" type="number" min="0" max="300"
+                class="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-wa" />
+              <span class="text-xs text-gray-500">seg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA text (not direct) -->
+        <div x-show="mode !== 'direct'" class="mb-5">
+          <label class="block text-xs font-medium text-gray-700 mb-1">Texto do botão</label>
+          <input x-model="ctaText" type="text" placeholder="Falar no WhatsApp"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+        </div>
+
+        <!-- Save -->
+        <div class="flex items-center gap-3 pt-1">
+          <button type="button" @click="salvar()"
+            :disabled="salvando"
+            class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+            <span x-text="salvando ? 'Salvando...' : 'Salvar'"></span>
+          </button>
+          <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+        </div>
       </div>
     </div>
 
@@ -796,16 +874,19 @@
       };
     }
 
-    function presellEditor() {
+    function deliveryEditor() {
       const d = SITE_DATA;
       return {
-        enabled: d.presellEnabled || false,
+        mode: d.deliveryMode || 'direct',
         title: d.presellTitle || '',
         subtitle: d.presellSubtitle || '',
         bullets: Array.isArray(d.presellBullets) ? [...d.presellBullets] : [],
         ctaText: d.presellCtaText || 'Falar no WhatsApp',
         bgColor: d.presellBgColor || '#0f172a',
         accentColor: d.presellAccentColor || '#25D366',
+        vslVideoUrl: d.vslVideoUrl || '',
+        vslDelay: d.vslDelaySeconds || 0,
+        formFields: Array.isArray(d.formFields) ? d.formFields.map(f => ({...f})) : [{type:'name',label:'Seu nome',required:true},{type:'phone',label:'Seu telefone',required:true}],
         salvando: false,
         msg: '',
         msgOk: true,
@@ -813,24 +894,25 @@
         init() {},
         addBullet() { if (this.bullets.length < 6) this.bullets.push(''); },
         removeBullet(i) { this.bullets.splice(i, 1); },
-        async toggleEnabled() {
-          this.enabled = !this.enabled;
-          await this.salvar();
-        },
+        addField() { if (this.formFields.length < 8) this.formFields.push({type:'text',label:'',required:false}); },
+        removeField(i) { this.formFields.splice(i, 1); },
         async salvar() {
           this.salvando = true;
           this.msg = '';
-          const res = await fetch(`/api/sites/${SITE_ID}/presell`, {
+          const res = await fetch(`/api/sites/${SITE_ID}/delivery`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
-              enabled: this.enabled,
+              mode: this.mode,
               title: this.title,
               subtitle: this.subtitle,
               bullets: this.bullets,
               ctaText: this.ctaText,
               bgColor: this.bgColor,
               accentColor: this.accentColor,
+              vslVideoUrl: this.vslVideoUrl,
+              vslDelaySeconds: parseInt(this.vslDelay) || 0,
+              formFields: this.formFields,
             }),
           });
           const data = await res.json();
