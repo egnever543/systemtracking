@@ -4,8 +4,8 @@ export const PLANS = {
     name: 'Trial',
     monthlyPrice: 0,
     annualPrice: 0,
-    clickLimit: 500,
-    siteLimit: 1,
+    clickLimit: -1,
+    siteLimit: -1,
     features: ['CAPI Facebook'],
   },
   starter: {
