@@ -219,6 +219,7 @@ api.post('/conversions', async (c) => {
         currency: finalCurrency,
         selectedNumber: rawEvent?.selected_number ?? null,
         fbclid: event.fbclid ?? null,
+        gclid: rawEvent?.click_params?.gclid ?? null,
         pageUrl: event.pageUrl ?? null,
         registeredAt: new Date().toISOString(),
       },
