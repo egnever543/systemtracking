@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { supabase } from '../db/index.js';
 import { mapSite, mapEvent } from '../db/mappers.js';
 import { sendConversionEvent } from '../services/facebookCapi.js';
+import { fireWebhook } from '../services/webhook.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -291,6 +292,24 @@ client.post('/:token/api/conversions', resolveToken, async (c) => {
     fb_response: capiResult.skipped ? null : JSON.stringify(capiResult.response),
     fb_sent_at: capiResult.skipped ? null : new Date().toISOString(),
   });
+
+  if (site.webhookUrl && Array.isArray(site.webhookEvents) && site.webhookEvents.includes('conversion.created')) {
+    fireWebhook(site.webhookUrl, {
+      event: 'conversion.created',
+      siteId: site.id,
+      siteName: site.name,
+      data: {
+        trackingId: event.trackingId,
+        value: finalValue,
+        currency: finalCurrency,
+        selectedNumber: rawEvent?.selected_number ?? null,
+        fbclid: event.fbclid ?? null,
+        gclid: rawEvent?.click_params?.gclid ?? null,
+        pageUrl: event.pageUrl ?? null,
+        registeredAt: new Date().toISOString(),
+      },
+    }).catch(() => {});
+  }
 
   if (!capiResult.skipped && !capiResult.success) {
     return c.json({ erro: capiResult.error, detalhe: capiResult.response, convId }, 207);
