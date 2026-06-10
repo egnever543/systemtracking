@@ -169,6 +169,22 @@ dash.post('/sites/:siteId/editar', async (c) => {
   return c.redirect(`/dashboard/sites/${siteId}?sucesso=1`);
 });
 
+dash.post('/sites/:siteId/deletar', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+
+  const { data: existing } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!existing) return c.redirect('/dashboard/sites');
+
+  await supabase.from('conversions').delete().eq('site_id', siteId);
+  await supabase.from('events').delete().eq('site_id', siteId);
+  await supabase.from('site_numbers').delete().eq('site_id', siteId);
+  await supabase.from('sites').delete().eq('id', siteId);
+
+  return c.redirect('/dashboard/sites?msg=Site+excluído+com+sucesso');
+});
+
 dash.get('/conversoes', async (c) => {
   const user = c.get('user');
   const html = render('conversions/list.html', {

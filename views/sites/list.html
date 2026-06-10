@@ -79,6 +79,10 @@
             <a :href="'/dashboard/sites/' + site.id" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors text-gray-700 font-medium">
               Ver detalhes
             </a>
+            <button @click="deletar(site.id, site.name)"
+              class="text-sm border border-red-200 hover:bg-red-50 text-red-500 px-3 py-1.5 rounded-lg transition-colors">
+              Excluir
+            </button>
           </div>
         </div>
       </template>
@@ -104,7 +108,15 @@
             this.toast = true;
             setTimeout(() => this.toast = false, 2500);
           });
-        }
+        },
+        async deletar(siteId, siteName) {
+          if (!confirm(`Excluir "${siteName}"?\n\nEsta ação é permanente e remove todos os cliques, conversões e configurações.`)) return;
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/dashboard/sites/${siteId}/deletar`;
+          document.body.appendChild(form);
+          form.submit();
+        },
       };
     }
   </script>

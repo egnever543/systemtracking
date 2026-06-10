@@ -1014,6 +1014,18 @@
         </form>
       </div>
 
+      <!-- Excluir Site -->
+      <div class="bg-white rounded-xl border border-red-100 p-5 mb-5">
+        <h2 class="font-semibold text-gray-900 mb-1">Excluir site</h2>
+        <p class="text-sm text-gray-500 mb-4">Esta ação é permanente e remove todos os cliques, conversões e configurações deste site.</p>
+        <form method="POST" :action="'/dashboard/sites/' + SITE_ID + '/deletar'"
+              onsubmit="return confirm('Tem certeza? Esta ação não pode ser desfeita. Todos os dados deste site serão excluídos permanentemente.')">
+          <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">
+            Excluir site permanentemente
+          </button>
+        </form>
+      </div>
+
       <!-- Portal do Cliente -->
       <div class="bg-white rounded-xl border border-gray-100 p-5"
            x-data="clientPortal()" x-init="init()">
