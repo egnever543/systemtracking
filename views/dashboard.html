@@ -79,7 +79,7 @@
     </template>
 
     <!-- Cards de métricas -->
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <div class="bg-white rounded-xl border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Cliques hoje</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesHoje ?? '—'"></p>
@@ -99,6 +99,10 @@
       <div class="bg-white rounded-xl border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Taxa de conversão</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.taxaConversao != null ? stats.taxaConversao + '%' : '—'"></p>
+      </div>
+      <div class="bg-white rounded-xl border border-amber-100 p-4" title="Leads que clicaram mas não converteram — evento CAPI de retargeting disparado automaticamente">
+        <p class="text-xs text-amber-600 mb-1">Retargeting auto (mês)</p>
+        <p class="text-2xl font-bold text-amber-600" x-text="stats.leadsPeridos ?? '—'"></p>
       </div>
     </div>
 

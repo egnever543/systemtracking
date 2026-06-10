@@ -872,6 +872,63 @@
           <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
         </div>
       </div>
+
+      <!-- Leads Perdidos -->
+      <div class="bg-white rounded-xl border border-gray-100 p-5 mt-5" x-data="lostLeadsConfig()" x-init="init()">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h2 class="font-semibold text-gray-900">Leads Perdidos</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Dispara um evento CAPI automaticamente para leads que clicaram mas não converteram dentro da janela definida.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer ml-4 shrink-0 mt-0.5">
+            <input type="checkbox" x-model="enabled" class="sr-only peer" />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
+          </label>
+        </div>
+
+        <template x-if="!loading && stats !== null">
+          <div class="mb-4">
+            <span class="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-lg">
+              <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+              <span x-text="(stats.totalLast30d ?? 0) + ' leads enviados ao retargeting nos últimos 30 dias'"></span>
+            </span>
+          </div>
+        </template>
+
+        <div x-show="enabled" class="space-y-4 mt-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Janela de abandono</label>
+              <select x-model="windowHours"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa bg-white">
+                <option value="4">4 horas</option>
+                <option value="12">12 horas</option>
+                <option value="24">24 horas (padrão)</option>
+                <option value="48">48 horas</option>
+                <option value="72">72 horas</option>
+              </select>
+              <p class="text-xs text-gray-400 mt-1">Tempo sem conversão para o lead ser considerado perdido.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Nome do evento CAPI</label>
+              <input x-model="eventName" type="text" placeholder="LeadAbandoned"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa font-mono" />
+              <p class="text-xs text-gray-400 mt-1">Use para criar audiências personalizadas no Gerenciador de Anúncios.</p>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5">
+            Enviado via CAPI server-side usando os pixels já configurados neste site. Nenhuma configuração extra necessária.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 mt-4">
+          <button @click="salvar()" :disabled="salvando"
+            class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+            <span x-text="salvando ? 'Salvando...' : 'Salvar'"></span>
+          </button>
+          <span x-show="msg" class="text-xs" :class="msgOk ? 'text-green-600' : 'text-red-500'" x-text="msg"></span>
+        </div>
+      </div>
     </div>
 
     <!-- ===== TAB: CONFIGURAÇÕES ===== -->
@@ -1417,6 +1474,51 @@
             this.msg = data.erro || 'Erro ao remover pixel';
             setTimeout(() => { this.msg = ''; }, 3000);
           }
+        },
+      };
+    }
+
+    function lostLeadsConfig() {
+      return {
+        loading: true,
+        enabled: false,
+        windowHours: '24',
+        eventName: 'LeadAbandoned',
+        stats: null,
+        salvando: false,
+        msg: '',
+        msgOk: false,
+        async init() {
+          try {
+            const res = await fetch('/api/sites/{{siteId}}/lost-leads/stats');
+            if (res.ok) {
+              const d = await res.json();
+              this.enabled = d.enabled;
+              this.windowHours = String(d.windowHours);
+              this.eventName = d.eventName;
+              this.stats = d;
+            }
+          } catch {}
+          this.loading = false;
+        },
+        async salvar() {
+          this.salvando = true;
+          this.msg = '';
+          try {
+            const res = await fetch('/api/sites/{{siteId}}/lost-leads', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ enabled: this.enabled, windowHours: parseInt(this.windowHours), eventName: this.eventName }),
+            });
+            const d = await res.json();
+            this.msgOk = res.ok;
+            this.msg = res.ok ? 'Configuração salva!' : (d.erro || 'Erro ao salvar');
+          } catch {
+            this.msgOk = false;
+            this.msg = 'Erro de conexão';
+          }
+          this.salvando = false;
+          setTimeout(() => { this.msg = ''; }, 3000);
         },
       };
     }

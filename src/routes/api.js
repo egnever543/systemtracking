@@ -326,6 +326,16 @@ api.get('/stats', async (c) => {
   const total = totalCliques || 0;
   const taxaConversao = total > 0 ? Math.round(((totalConversoes || 0) / total) * 100) : 0;
 
+  let leadsPeridos = 0;
+  try {
+    const { count: lp } = await supabase.from('events')
+      .select('*', { count: 'exact', head: true })
+      .in('site_id', siteIds)
+      .not('lost_processed_at', 'is', null)
+      .gte('lost_processed_at', mes.toISOString());
+    leadsPeridos = lp || 0;
+  } catch {}
+
   return c.json({
     cliquesHoje: cliquesHoje || 0,
     cliquesSemana: cliquesSemana || 0,
@@ -334,6 +344,7 @@ api.get('/stats', async (c) => {
     totalCliques: total,
     taxaConversao,
     totalSites: siteIds.length,
+    leadsPeridos,
   });
 });
 
@@ -911,6 +922,55 @@ api.delete('/sites/:siteId/logo', async (c) => {
   await supabase.storage.from('site-logos').remove([siteId]);
   await supabase.from('sites').update({ site_logo_url: null }).eq('id', siteId);
   return c.json({ ok: true });
+});
+
+api.patch('/sites/:siteId/lost-leads', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+  const { data: rawSite } = await supabase.from('sites').select('id').eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const { enabled, windowHours, eventName } = body;
+  const update = {};
+  if (enabled !== undefined) update.lost_leads_enabled = Boolean(enabled);
+  if (windowHours !== undefined) update.lost_leads_window_hours = Math.max(1, Math.min(168, parseInt(windowHours)));
+  if (eventName !== undefined) update.lost_leads_event_name = String(eventName).slice(0, 50) || 'LeadAbandoned';
+
+  const { error } = await supabase.from('sites').update(update).eq('id', siteId);
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json({ ok: true });
+});
+
+api.get('/sites/:siteId/lost-leads/stats', async (c) => {
+  const user = c.get('user');
+  const { siteId } = c.req.param();
+  const { data: rawSite } = await supabase.from('sites')
+    .select('id, lost_leads_enabled, lost_leads_window_hours, lost_leads_event_name')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const trinta = new Date();
+  trinta.setDate(trinta.getDate() - 30);
+
+  let totalLast30d = 0;
+  try {
+    const { count } = await supabase.from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('site_id', siteId)
+      .not('lost_processed_at', 'is', null)
+      .gte('lost_processed_at', trinta.toISOString());
+    totalLast30d = count || 0;
+  } catch {}
+
+  return c.json({
+    enabled: rawSite.lost_leads_enabled ?? false,
+    windowHours: rawSite.lost_leads_window_hours ?? 24,
+    eventName: rawSite.lost_leads_event_name ?? 'LeadAbandoned',
+    totalLast30d,
+  });
 });
 
 export default api;

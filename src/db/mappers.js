@@ -60,6 +60,9 @@ export const mapSite = (s) => !s ? null : {
   webhookEvents: s.webhook_events ?? [],
   siteLogoUrl: s.site_logo_url ?? null,
   fbPixels: s.fb_pixels ?? [],
+  lostLeadsEnabled: s.lost_leads_enabled ?? false,
+  lostLeadsWindowHours: s.lost_leads_window_hours ?? 24,
+  lostLeadsEventName: s.lost_leads_event_name ?? 'LeadAbandoned',
 };
 
 export const mapEvent = (e) => !e ? null : {
