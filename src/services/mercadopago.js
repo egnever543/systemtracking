@@ -6,7 +6,7 @@ export async function createSubscription({ email, userId }) {
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
 
   const payload = {
-    reason: process.env.PLAN_NAME || 'WA CAPI Tracker - Plano Mensal',
+    reason: process.env.PLAN_NAME || 'MeuFluxo - Plano Mensal',
     auto_recurring: {
       frequency: 1,
       frequency_type: 'months',

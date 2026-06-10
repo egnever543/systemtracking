@@ -14,7 +14,7 @@ export async function sendEmail({ to, subject, html }) {
   if (!client) return;
   try {
     await client.emails.send({
-      from: process.env.EMAIL_FROM || 'WA CAPI <noreply@wacapi.com.br>',
+      from: process.env.EMAIL_FROM || 'MeuFluxo <noreply@wacapi.com.br>',
       to,
       subject,
       html,
@@ -28,7 +28,7 @@ export function conversionEmailHtml({ siteName, trackingId, value, currency }) {
   const base = process.env.PUBLIC_BASE_URL || '';
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f9fafb;padding:24px;margin:0;">
 <div style="max-width:480px;margin:0 auto;background:white;border-radius:12px;padding:24px;border:1px solid #e5e7eb;">
-  <div style="background:#25D366;border-radius:8px;padding:12px 16px;margin-bottom:20px;">
+  <div style="background:#18181b;border-radius:8px;padding:12px 16px;margin-bottom:20px;">
     <span style="color:white;font-weight:700;font-size:16px;">&#128176; Nova venda registrada!</span>
   </div>
   <p style="color:#374151;margin:0 0 16px;font-size:14px;">Uma conversão foi registrada no site <strong>${siteName}</strong>.</p>
@@ -39,10 +39,10 @@ export function conversionEmailHtml({ siteName, trackingId, value, currency }) {
     </tr>
     <tr>
       <td style="padding:10px 14px;font-size:12px;color:#6b7280;font-weight:600;">Valor</td>
-      <td style="padding:10px 14px;font-size:16px;font-weight:700;color:#25D366;">${currency} ${Number(value).toFixed(2)}</td>
+      <td style="padding:10px 14px;font-size:16px;font-weight:700;color:#18181b;">${currency} ${Number(value).toFixed(2)}</td>
     </tr>
   </table>
-  <a href="${base}/dashboard" style="display:inline-block;background:#25D366;color:white;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Ver Dashboard &rarr;</a>
+  <a href="${base}/dashboard" style="display:inline-block;background:#18181b;color:white;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Ver Dashboard &rarr;</a>
 </div></body></html>`;
 }
 
@@ -53,7 +53,7 @@ export function weeklyReportEmailHtml({ userName, period, stats, sites }) {
       <td style="padding:8px 14px;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;">${s.name}</td>
       <td style="padding:8px 14px;font-size:13px;text-align:center;border-bottom:1px solid #f3f4f6;">${s.cliques}</td>
       <td style="padding:8px 14px;font-size:13px;text-align:center;border-bottom:1px solid #f3f4f6;">${s.conversoes}</td>
-      <td style="padding:8px 14px;font-size:13px;text-align:center;font-weight:700;color:#25D366;border-bottom:1px solid #f3f4f6;">${s.taxa}%</td>
+      <td style="padding:8px 14px;font-size:13px;text-align:center;font-weight:700;color:#18181b;border-bottom:1px solid #f3f4f6;">${s.taxa}%</td>
     </tr>`).join('') : '';
 
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f9fafb;padding:24px;margin:0;">
@@ -63,7 +63,7 @@ export function weeklyReportEmailHtml({ userName, period, stats, sites }) {
   <table style="width:100%;border-collapse:separate;border-spacing:8px;margin-bottom:20px;">
     <tr>
       <td style="background:#f0fdf4;border-radius:10px;padding:16px;text-align:center;width:33%;">
-        <div style="font-size:28px;font-weight:700;color:#25D366;">${stats.cliques}</div>
+        <div style="font-size:28px;font-weight:700;color:#18181b;">${stats.cliques}</div>
         <div style="font-size:12px;color:#6b7280;margin-top:4px;">Cliques</div>
       </td>
       <td style="background:#eff6ff;border-radius:10px;padding:16px;text-align:center;width:33%;">
@@ -86,7 +86,7 @@ export function weeklyReportEmailHtml({ userName, period, stats, sites }) {
     </tr></thead>
     <tbody>${siteRows}</tbody>
   </table>` : ''}
-  <a href="${base}/dashboard" style="display:inline-block;background:#25D366;color:white;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Ver Dashboard &rarr;</a>
+  <a href="${base}/dashboard" style="display:inline-block;background:#18181b;color:white;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Ver Dashboard &rarr;</a>
   <p style="color:#9ca3af;font-size:11px;margin-top:20px;">Para n&atilde;o receber estes e-mails, acesse Configura&ccedil;&otilde;es no dashboard.</p>
 </div></body></html>`;
 }

@@ -860,7 +860,7 @@ api.post('/sites/:siteId/webhook/test', async (c) => {
     event: 'test',
     siteId: site.id,
     siteName: site.name,
-    data: { message: 'Teste de webhook — WA CAPI Tracker', timestamp: new Date().toISOString() },
+    data: { message: 'Teste de webhook — MeuFluxo', timestamp: new Date().toISOString() },
   });
 
   return c.json(result);
