@@ -3,6 +3,8 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import cron from 'node-cron';
 import { requireAuth, requireAuthApi } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
@@ -32,11 +34,14 @@ app.get('/r/:siteId', (c) => {
   return c.redirect('/t/r/' + siteId + (qs ? '?' + qs : ''), 302);
 });
 
+// Landing page
+app.get('/', (c) => {
+  const html = readFileSync(join(process.cwd(), 'views/landing.html'), 'utf-8');
+  return c.html(html);
+});
+
 // Auth
 app.route('/', authRoutes);
-
-// Redireciona raiz para dashboard
-app.get('/', (c) => c.redirect('/dashboard'));
 
 // Dashboard (protegido)
 app.use('/dashboard/*', requireAuth);
@@ -57,7 +62,7 @@ app.use('/billing/*', requireAuth);
 app.route('/billing', billingRoutes);
 
 const port = parseInt(process.env.PORT || '3000');
-console.log(`🚀 WA CAPI Tracker rodando na porta ${port}`);
+console.log(`🚀 MeuFluxo rodando na porta ${port}`);
 
 serve({ fetch: app.fetch, port });
 
