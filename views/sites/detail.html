@@ -25,13 +25,14 @@
       <span class="font-bold text-gray-900 text-sm">MeuFluxo</span>
     </div>
     <div class="flex items-center gap-4">
-      <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">Início</a>
-      <a href="/dashboard/sites" class="text-sm font-medium text-gray-900">Sites</a>
-      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">Assinatura</a>
-      <a href="/dashboard/docs" class="text-sm text-gray-600 hover:text-gray-900">Docs</a>
-      <a href="/dashboard/conversoes/registrar?site={{siteId}}" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">+ Registrar Venda</a>
-      <a href="/dashboard/settings" class="text-sm text-gray-600 hover:text-gray-900">Config</a>
-      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
+      <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900">{{t_navHome}}</a>
+      <a href="/dashboard/sites" class="text-sm font-medium text-gray-900">{{t_navSites}}</a>
+      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">{{t_navSubscription}}</a>
+      <a href="/dashboard/docs" class="text-sm text-gray-600 hover:text-gray-900">{{t_navDocs}}</a>
+      <a href="/dashboard/conversoes/registrar?site={{siteId}}" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">{{t_navRegisterSale}}</a>
+      <a href="/dashboard/settings" class="text-sm text-gray-600 hover:text-gray-900">{{t_navSettings}}</a>
+      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">{{t_navLogout}}</a>
+      <button onclick="setLocale('{{localToggleTarget}}')" class="text-xs text-gray-400 hover:text-gray-600 font-medium px-1.5 py-0.5 rounded border border-gray-200 hover:border-gray-300 transition-colors" title="Change language">{{t_langToggle}}</button>
       <button onclick="toggleTheme()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded" title="Alternar tema">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
       </button>
@@ -1607,5 +1608,11 @@
       };
     }
   </script>
+<script>
+  function setLocale(locale) {
+    document.cookie = 'locale=' + locale + ';path=/;max-age=31536000';
+    location.reload();
+  }
+</script>
 </body>
 </html>

@@ -103,6 +103,7 @@ billing.get('/', async (c) => {
   const currentPlanSlug = dbUser.planSlug || 'trial';
   const billingCycle = dbUser.billingCycle || 'monthly';
   const locale = detectLocale(c);
+  const t = getTranslations(locale);
   const planDataJSON = JSON.stringify({
     plans: Object.values(PLANS),
     currentPlanSlug,
@@ -121,9 +122,12 @@ billing.get('/', async (c) => {
     .replaceAll('{{subscriptionBanner}}', await getSubscriptionBanner(user.userId))
     .replaceAll('{{planDataJSON}}', planDataJSON.replace(/</g, '\\u003c').replace(/>/g, '\\u003e'))
     .replaceAll('{{planCardsHtml}}', planCardsHtml)
-    .replaceAll('{{choosePlan}}', locale === 'en' ? 'Choose your plan' : 'Escolha seu plano')
-    .replaceAll('{{billingMonthly}}', locale === 'en' ? 'Monthly' : 'Mensal')
-    .replaceAll('{{billingAnnual}}', locale === 'en' ? 'Annual (save 31%)' : 'Anual (economize 31%)');
+    .replaceAll('{{localToggleTarget}}', locale === 'en' ? 'pt' : 'en')
+    .replaceAll('{{locale}}', locale);
+
+  for (const [k, v] of Object.entries(t)) {
+    html = html.replaceAll(`{{t_${k}}}`, v);
+  }
 
   return c.html(html);
 });
