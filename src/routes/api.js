@@ -973,4 +973,13 @@ api.get('/sites/:siteId/lost-leads/stats', async (c) => {
   });
 });
 
+api.patch('/user/locale', async (c) => {
+  const user = c.get('user');
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+  const locale = body.locale === 'en' ? 'en' : 'pt';
+  await supabase.from('users').update({ locale }).eq('id', user.userId);
+  return c.json({ ok: true, locale });
+});
+
 export default api;

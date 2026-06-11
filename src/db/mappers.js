@@ -21,6 +21,10 @@ export const mapUser = (u) => !u ? null : {
   logoUrl: u.logo_url ?? null,
   planSlug: u.plan_slug ?? 'trial',
   billingCycle: u.billing_cycle ?? 'monthly',
+  locale: u.locale ?? 'pt',
+  country: u.country ?? 'br',
+  stripeCustomerId: u.stripe_customer_id ?? null,
+  stripeSubscriptionId: u.stripe_subscription_id ?? null,
 };
 
 export const mapSite = (s) => !s ? null : {

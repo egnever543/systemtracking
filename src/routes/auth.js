@@ -7,6 +7,8 @@ import { mapUser } from '../db/mappers.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getCookie, setCookie as setC } from 'hono/cookie';
+import { getTranslations, detectLocale } from '../i18n/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const viewsDir = join(__dirname, '../../views');
@@ -14,7 +16,13 @@ const viewsDir = join(__dirname, '../../views');
 const auth = new Hono();
 
 auth.get('/login', (c) => {
-  const html = readFileSync(join(viewsDir, 'login.html'), 'utf-8');
+  const locale = detectLocale(c);
+  const t = getTranslations(locale);
+  let html = readFileSync(join(viewsDir, 'login.html'), 'utf-8');
+  html = html.replaceAll('{{locale}}', locale);
+  for (const [k, v] of Object.entries(t)) {
+    html = html.replaceAll(`{{t_${k}}}`, v);
+  }
   return c.html(html);
 });
 
@@ -33,6 +41,8 @@ auth.post('/login', async (c) => {
     return c.redirect('/login?erro=Email+ou+senha+incorretos');
   }
 
+  const userLocale = raw?.locale || 'pt';
+
   const sessionData = Buffer.from(
     JSON.stringify({ userId: user.id, email: user.email, name: user.name })
   ).toString('base64');
@@ -45,6 +55,12 @@ auth.post('/login', async (c) => {
     secure: process.env.NODE_ENV === 'production',
   });
 
+  setC(c, 'locale', userLocale, {
+    sameSite: 'Lax',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  });
+
   return c.redirect('/dashboard');
 });
 
@@ -54,7 +70,16 @@ auth.get('/logout', (c) => {
 });
 
 auth.get('/register', (c) => {
-  const html = readFileSync(join(viewsDir, 'register.html'), 'utf-8');
+  const locale = detectLocale(c);
+  const t = getTranslations(locale);
+  let html = readFileSync(join(viewsDir, 'register.html'), 'utf-8');
+  html = html.replaceAll('{{locale}}', locale);
+  const defaultCountry = locale === 'en' ? 'us' : 'br';
+  html = html.replaceAll('{{countryBRSelected}}', defaultCountry === 'br' ? 'selected' : '');
+  html = html.replaceAll('{{countryUSSelected}}', defaultCountry === 'us' ? 'selected' : '');
+  for (const [k, v] of Object.entries(t)) {
+    html = html.replaceAll(`{{t_${k}}}`, v);
+  }
   return c.html(html);
 });
 
@@ -79,6 +104,9 @@ auth.post('/register', async (c) => {
     return c.redirect('/register?erro=Este+email+j%C3%A1+est%C3%A1+cadastrado');
   }
 
+  const country = body.country === 'us' ? 'us' : 'br';
+  const locale = country === 'us' ? 'en' : 'pt';
+
   const hash = bcrypt.hashSync(senha, 12);
   const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -89,6 +117,8 @@ auth.post('/register', async (c) => {
     name: nome.trim(),
     trial_ends_at: trialEndsAt,
     subscription_status: 'trialing',
+    country,
+    locale,
   });
 
   return c.redirect('/login?msg=Conta+criada+com+sucesso!+Fa%C3%A7a+o+login.');

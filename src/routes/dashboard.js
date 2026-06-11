@@ -7,12 +7,20 @@ import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getCookie } from 'hono/cookie';
+import { getTranslations, detectLocale } from '../i18n/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const viewsDir = join(__dirname, '../../views');
 
-function render(file, vars = {}) {
+function render(file, vars = {}, locale = 'pt') {
   let html = readFileSync(join(viewsDir, file), 'utf-8');
+  const t = getTranslations(locale);
+  for (const [k, v] of Object.entries(t)) {
+    html = html.replaceAll(`{{t_${k}}}`, v);
+  }
+  html = html.replaceAll('{{locale}}', locale);
+  html = html.replaceAll('{{localToggleTarget}}', locale === 'en' ? 'pt' : 'en');
   for (const [key, val] of Object.entries(vars)) {
     html = html.replaceAll(`{{${key}}}`, String(val ?? ''));
   }
@@ -23,15 +31,17 @@ const dash = new Hono();
 
 dash.get('/', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const html = render('dashboard.html', {
     userName: user.name,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
 dash.get('/sites', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const { data: rawSites } = await supabase.from('sites').select('*')
     .eq('user_id', user.userId).order('created_at', { ascending: false });
 
@@ -55,16 +65,17 @@ dash.get('/sites', async (c) => {
     sitesJSON: JSON.stringify(siteCards),
     baseUrl,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
 dash.get('/sites/novo', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const html = render('sites/new.html', {
     userName: user.name,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
@@ -120,6 +131,7 @@ dash.get('/sites/:siteId', async (c) => {
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
   const snippet = `&lt;script src="${baseUrl}/tracker.js" data-site="${site.id}" async&gt;&lt;/script&gt;`;
 
+  const locale = detectLocale(c);
   const html = render('sites/detail.html', {
     userName: user.name,
     siteJSON: JSON.stringify({
@@ -135,7 +147,7 @@ dash.get('/sites/:siteId', async (c) => {
     baseUrl,
     redirectUrl: `${baseUrl}/t/r/${site.id}`,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 

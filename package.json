@@ -20,6 +20,7 @@
     "nanoid": "^5.0.7",
     "node-cron": "^4.2.1",
     "resend": "^6.12.4",
+    "stripe": "^22.2.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {
