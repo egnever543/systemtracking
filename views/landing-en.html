@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeuFluxo — Lead Routing &amp; WhatsApp Tracking</title>
+  <meta name="description" content="Route your leads to WhatsApp, groups, checkouts or Telegram with individual click tracking and automatic event firing to Facebook, Google and TikTok CAPI." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0f0f0f',
+            border: '#1f1f1f',
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+            },
+          },
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #000; color: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .noise-bg {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #fff 60%, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pricing-toggle-btn.active {
+      background: #fff;
+      color: #000;
+    }
+    [data-annual] { display: none; }
+    [data-monthly] { display: block; }
+    body.annual-active [data-annual] { display: block; }
+    body.annual-active [data-monthly] { display: none; }
+  </style>
+</head>
+<body class="antialiased">
+
+<!-- ═══════════════════════════════════════════════════════
+     1. NAV
+     ═══════════════════════════════════════════════════════ -->
+<header class="sticky top-0 z-50 border-b border-[#1f1f1f] bg-black/80 backdrop-blur-md">
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+    <!-- Wordmark -->
+    <a href="/en" class="flex items-center gap-2 group">
+      <span class="text-lg font-bold tracking-tight text-white">MeuFluxo</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-[#22d3ee] shadow-[0_0_6px_#22d3ee]"></span>
+    </a>
+
+    <!-- Center links -->
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#funcionalidades" class="text-sm text-[#6b7280] hover:text-white transition-colors">Features</a>
+      <a href="#precos" class="text-sm text-[#6b7280] hover:text-white transition-colors">Pricing</a>
+      <a href="/pt" class="text-sm text-[#6b7280] hover:text-white transition-colors">PT</a>
+    </div>
+
+    <!-- Right CTAs -->
+    <div class="flex items-center gap-3">
+      <a href="/login" class="hidden sm:inline-flex text-sm text-[#6b7280] hover:text-white transition-colors px-3 py-1.5 rounded-md border border-transparent hover:border-[#1f1f1f]">
+        Sign in
+      </a>
+      <a href="/register" class="inline-flex items-center text-sm font-medium bg-white text-black px-4 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+        Start free trial
+      </a>
+    </div>
+  </nav>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════
+     2. HERO
+     ═══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden">
+  <!-- Subtle radial glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[#22d3ee] opacity-[0.04] blur-[120px] rounded-full"></div>
+  </div>
+
+  <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-28 text-center">
+
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 border border-[#22d3ee]/40 rounded-full px-4 py-1.5 mb-8 bg-[#22d3ee]/5">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>
+      <span class="text-xs font-medium text-[#22d3ee] tracking-wide uppercase">Tracking + Routing + CAPI</span>
+    </div>
+
+    <!-- Headline -->
+    <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.05] tracking-tight mb-6">
+      <span class="text-white">Route leads. Track conversions.</span><br />
+      <span class="gradient-text">Prove results.</span>
+    </h1>
+
+    <!-- Subheadline -->
+    <p class="text-lg sm:text-xl text-[#6b7280] max-w-2xl mx-auto leading-relaxed mb-10">
+      Route your leads to WhatsApp, groups, checkouts or Telegram —
+      with individual click tracking and automatic event firing to Facebook,
+      Google and TikTok CAPI.
+    </p>
+
+    <!-- CTAs -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+      <a href="/register" class="inline-flex items-center gap-2 bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-base shadow-lg shadow-white/10">
+        Start free trial
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#funcionalidades" class="inline-flex items-center gap-2 text-[#6b7280] hover:text-white transition-colors text-base underline underline-offset-4 decoration-[#6b7280]/40">
+        See how it works
+      </a>
+    </div>
+
+    <!-- Social proof stats -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-white">+12,000</div>
+        <div class="text-sm text-[#6b7280] mt-0.5">Clicks tracked/day</div>
+      </div>
+      <div class="hidden sm:block w-px h-8 bg-[#1f1f1f]"></div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-white">+340</div>
+        <div class="text-sm text-[#6b7280] mt-0.5">Active media buyers</div>
+      </div>
+      <div class="hidden sm:block w-px h-8 bg-[#1f1f1f]"></div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-white">99.9%</div>
+        <div class="text-sm text-[#6b7280] mt-0.5">Uptime</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     3. PROBLEM SECTION
+     ═══════════════════════════════════════════════════════ -->
+<section class="bg-[#0a0a0a] border-y border-[#1f1f1f] py-20 sm:py-28">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <p class="text-xs font-semibold text-[#6b7280] uppercase tracking-widest text-center mb-4">The Problem</p>
+    <h2 class="text-3xl sm:text-4xl font-bold text-white text-center mb-4">
+      Do you know exactly where<br class="hidden sm:block" /> each conversion comes from?
+    </h2>
+    <p class="text-[#6b7280] text-center text-lg mb-14 max-w-xl mx-auto">
+      Most media buyers don't. And that's costing them dearly.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- Pain card 1 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] border-l-2 border-l-red-700/60 rounded-xl p-6 hover:border-l-red-500 transition-colors">
+        <div class="w-9 h-9 rounded-lg bg-red-950/40 border border-red-900/30 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            <line x1="2" y1="2" x2="22" y2="22"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold text-lg mb-2">The pixel can't see WhatsApp</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          When the lead clicks your ad and goes to WhatsApp, the pixel loses track. The conversion isn't attributed. Your ROAS looks lower than it really is.
+        </p>
+      </div>
+
+      <!-- Pain card 2 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] border-l-2 border-l-red-700/60 rounded-xl p-6 hover:border-l-red-500 transition-colors">
+        <div class="w-9 h-9 rounded-lg bg-red-950/40 border border-red-900/30 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <line x1="2" y1="2" x2="22" y2="22"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold text-lg mb-2">Multiple groups turn into chaos</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Manually distributing leads across full groups, with no idea which ones are packed, and no way to track which ad each lead came from.
+        </p>
+      </div>
+
+      <!-- Pain card 3 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] border-l-2 border-l-red-700/60 rounded-xl p-6 hover:border-l-red-500 transition-colors">
+        <div class="w-9 h-9 rounded-lg bg-red-950/40 border border-red-900/30 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+            <line x1="7" y1="6" x2="17" y2="6" stroke-dasharray="2 2"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold text-lg mb-2">The checkout never gets the fbclid</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          When you redirect to an external page, the ad parameters vanish along the way. Attribution breaks entirely.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     4. HOW IT WORKS
+     ═══════════════════════════════════════════════════════ -->
+<section id="funcionalidades" class="py-20 sm:py-28">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">How MeuFluxo works</h2>
+      <p class="text-[#6b7280] text-lg">Set up in minutes. Track forever.</p>
+    </div>
+
+    <!-- Steps -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 relative">
+      <!-- Connecting line (desktop) -->
+      <div class="hidden lg:block absolute top-7 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-px bg-gradient-to-r from-transparent via-[#1f1f1f] to-transparent"></div>
+
+      <!-- Step 1 -->
+      <div class="relative">
+        <div class="flex flex-col items-start">
+          <div class="w-12 h-12 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] flex items-center justify-center mb-4 relative z-10">
+            <span class="text-sm font-bold text-[#22d3ee]">01</span>
+          </div>
+          <h3 class="text-white font-semibold text-base mb-2">Install the snippet</h3>
+          <p class="text-[#6b7280] text-sm leading-relaxed">
+            One line of code on your site. MeuFluxo starts capturing fbclid, gclid and UTMs automatically.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative">
+        <div class="flex flex-col items-start">
+          <div class="w-12 h-12 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] flex items-center justify-center mb-4 relative z-10">
+            <span class="text-sm font-bold text-[#22d3ee]">02</span>
+          </div>
+          <h3 class="text-white font-semibold text-base mb-2">Set up your destinations</h3>
+          <p class="text-[#6b7280] text-sm leading-relaxed">
+            WhatsApp, groups, checkouts, Telegram. Set distribution weights. Choose your funnel type: direct, pre-sale, form or VSL.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative">
+        <div class="flex flex-col items-start">
+          <div class="w-12 h-12 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] flex items-center justify-center mb-4 relative z-10">
+            <span class="text-sm font-bold text-[#22d3ee]">03</span>
+          </div>
+          <h3 class="text-white font-semibold text-base mb-2">Each click gets a unique ID</h3>
+          <p class="text-[#6b7280] text-sm leading-relaxed">
+            <code class="text-[#22d3ee] font-mono text-xs bg-[#22d3ee]/10 px-1.5 py-0.5 rounded">WA-AB3X7K</code> — traceable back to the originating ad.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="relative">
+        <div class="flex flex-col items-start">
+          <div class="w-12 h-12 rounded-xl bg-[#0f0f0f] border border-[#1f1f1f] flex items-center justify-center mb-4 relative z-10">
+            <span class="text-sm font-bold text-[#22d3ee]">04</span>
+          </div>
+          <h3 class="text-white font-semibold text-base mb-2">Conversion logged → CAPI fires</h3>
+          <p class="text-[#6b7280] text-sm leading-relaxed">
+            Facebook, Google and TikTok receive an enriched event with all the data from the original click.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     5. FEATURES GRID
+     ═══════════════════════════════════════════════════════ -->
+<section class="bg-[#0a0a0a] border-y border-[#1f1f1f] py-20 sm:py-28">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Everything a media buyer needs</h2>
+      <p class="text-[#6b7280] text-lg">No workarounds. No manual integrations.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <!-- Feature 1 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Weighted routing</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Define what % of leads go to each destination. Automatic load balancing on every click.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Full CAPI</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Facebook, Google Ads and TikTok. Lead event on click, Purchase/conversion when you log the sale.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Parameters preserved</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          When redirecting to external URLs, fbclid, gclid and utm_* are passed through intact.
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M7 8h4M7 11h6"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Custom funnels</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Pre-sale page, lead capture form or YouTube VSL before the redirect.
+        </p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Client portal</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          A private link for your client to log sales and view reports — without access to the main dashboard.
+        </p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-6 hover:border-[#2f2f2f] transition-colors group">
+        <div class="w-9 h-9 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Webhooks + UTM Analytics</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Integrate with any CRM. See which campaign, source and medium drive your best leads.
+        </p>
+      </div>
+
+      <!-- Feature 7 — Auto Retargeting (highlight) -->
+      <div class="bg-[#0f0f0f] border border-amber-500/30 rounded-xl p-6 hover:border-amber-500/60 transition-colors group relative sm:col-span-2 lg:col-span-1">
+        <div class="absolute top-4 right-4">
+          <span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">NEW</span>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold mb-2">Automatic retargeting of lost leads</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Leads who clicked but didn't buy automatically receive a server-side CAPI event — feeding your retargeting audience with zero manual effort.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     6. USE CASES
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">For every type of operation</h2>
+      <p class="text-[#6b7280] text-lg">From product launches to support teams.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+      <!-- Use case 1 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-7 hover:border-[#2f2f2f] transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] flex items-center justify-center mb-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-bold text-lg mb-2">Product launches</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Automatically distribute leads across multiple WhatsApp groups as they fill up. No spreadsheet, no human error.
+        </p>
+      </div>
+
+      <!-- Use case 2 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-7 hover:border-[#2f2f2f] transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] flex items-center justify-center mb-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M2 10h20"/>
+            <path d="M7 15h2M13 15h4"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-bold text-lg mb-2">Checkout with attribution</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Redirect to your sales page carrying fbclid and UTMs. The checkout receives the originating ad data.
+        </p>
+      </div>
+
+      <!-- Use case 3 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-7 hover:border-[#2f2f2f] transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] flex items-center justify-center mb-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-bold text-lg mb-2">Support teams</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Distribute leads among your agents' WhatsApp numbers with weights based on capacity or schedule.
+        </p>
+      </div>
+
+      <!-- Use case 4 -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-7 hover:border-[#2f2f2f] transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-[#0a0a0a] border border-[#1f1f1f] flex items-center justify-center mb-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-bold text-lg mb-2">VSL funnel → WhatsApp</h3>
+        <p class="text-[#6b7280] text-sm leading-relaxed">
+          Show the sales video first. Set a minimum watch time before the button appears. More qualified leads reach WhatsApp.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     7. PRICING
+     ═══════════════════════════════════════════════════════ -->
+<section id="precos" class="bg-[#0a0a0a] border-y border-[#1f1f1f] py-20 sm:py-28">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Simple pricing.</h2>
+      <p class="text-[#6b7280] text-lg mb-8">Start on the free trial and upgrade when you're ready.</p>
+
+      <!-- Monthly / Annual toggle -->
+      <div class="inline-flex items-center gap-1 bg-[#0f0f0f] border border-[#1f1f1f] rounded-xl p-1">
+        <button id="btn-monthly" class="pricing-toggle-btn active text-sm font-medium px-4 py-2 rounded-lg transition-all" onclick="setPricing('monthly')">
+          Monthly
+        </button>
+        <button id="btn-annual" class="pricing-toggle-btn text-sm font-medium px-4 py-2 rounded-lg transition-all text-[#6b7280] hover:text-white" onclick="setPricing('annual')">
+          Annual
+          <span class="ml-1.5 text-xs bg-[#22d3ee]/15 text-[#22d3ee] border border-[#22d3ee]/25 px-1.5 py-0.5 rounded-full">2 months free</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+
+      <!-- Starter -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-2xl p-7 flex flex-col">
+        <div class="mb-6">
+          <h3 class="text-white font-bold text-lg mb-1">Starter</h3>
+          <p class="text-[#6b7280] text-sm">For those just getting started.</p>
+        </div>
+        <div class="mb-6">
+          <div data-monthly>
+            <span class="text-4xl font-bold text-white">$19</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+          </div>
+          <div data-annual>
+            <span class="text-4xl font-bold text-white">$13</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+            <div class="text-xs text-[#6b7280] mt-1">Billed as $156/year</div>
+          </div>
+        </div>
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>10,000 clicks/mo</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>3 sites</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>CAPI Facebook, Google &amp; TikTok</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>WhatsApp, groups &amp; Telegram</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Client portal</span>
+          </li>
+        </ul>
+        <a href="/register" class="w-full text-center py-2.5 px-4 rounded-lg border border-[#2f2f2f] text-white text-sm font-medium hover:bg-white hover:text-black transition-all">
+          Start with Starter
+        </a>
+      </div>
+
+      <!-- Pro (popular) -->
+      <div class="bg-[#0f0f0f] border-2 border-[#22d3ee]/60 rounded-2xl p-7 flex flex-col relative shadow-[0_0_30px_rgba(34,211,238,0.08)]">
+        <!-- Badge -->
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span class="bg-[#22d3ee] text-black text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">Most popular</span>
+        </div>
+        <div class="mb-6">
+          <h3 class="text-white font-bold text-lg mb-1">Pro</h3>
+          <p class="text-[#6b7280] text-sm">For media buyers at scale.</p>
+        </div>
+        <div class="mb-6">
+          <div data-monthly>
+            <span class="text-4xl font-bold text-white">$49</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+          </div>
+          <div data-annual>
+            <span class="text-4xl font-bold text-white">$33</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+            <div class="text-xs text-[#6b7280] mt-1">Billed as $396/year</div>
+          </div>
+        </div>
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>50,000 clicks/mo</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>15 sites</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Full CAPI (Facebook, Google, TikTok)</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Funnels: direct, pre-sale, form, VSL</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Webhooks + UTM Analytics</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Hourly heatmap</span>
+          </li>
+        </ul>
+        <a href="/register" class="w-full text-center py-2.5 px-4 rounded-lg bg-[#22d3ee] text-black text-sm font-bold hover:bg-[#06b6d4] transition-all">
+          Start with Pro
+        </a>
+      </div>
+
+      <!-- Agency -->
+      <div class="bg-[#0f0f0f] border border-[#1f1f1f] rounded-2xl p-7 flex flex-col">
+        <div class="mb-6">
+          <h3 class="text-white font-bold text-lg mb-1">Agency</h3>
+          <p class="text-[#6b7280] text-sm">For agencies and top-tier buyers.</p>
+        </div>
+        <div class="mb-6">
+          <div data-monthly>
+            <span class="text-4xl font-bold text-white">$99</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+          </div>
+          <div data-annual>
+            <span class="text-4xl font-bold text-white">$69</span>
+            <span class="text-[#6b7280] text-sm">/mo</span>
+            <div class="text-xs text-[#6b7280] mt-1">Billed as $828/year</div>
+          </div>
+        </div>
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>200,000 clicks/mo</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Unlimited sites</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Everything in Pro included</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Multi-pixel per site</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-sm text-[#6b7280]">
+            <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Priority support</span>
+          </li>
+        </ul>
+        <a href="/register" class="w-full text-center py-2.5 px-4 rounded-lg border border-[#2f2f2f] text-white text-sm font-medium hover:bg-white hover:text-black transition-all">
+          Start with Agency
+        </a>
+      </div>
+    </div>
+
+    <!-- Note below plans -->
+    <p class="text-center text-sm text-[#6b7280] mt-8">
+      All plans include CAPI Facebook, Google &amp; TikTok + unlimited tracking during the free trial.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     8. FINAL CTA
+     ═══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden py-24 sm:py-32 noise-bg">
+  <!-- Glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#22d3ee] opacity-[0.05] blur-[100px] rounded-full"></div>
+  </div>
+
+  <div class="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
+    <h2 class="text-4xl sm:text-5xl font-bold text-white mb-4 leading-tight">
+      Start tracking your leads today
+    </h2>
+    <p class="text-[#6b7280] text-xl mb-10">
+      Free trial. No credit card required.
+    </p>
+    <a href="/register" class="inline-flex items-center gap-2 bg-white text-black font-bold text-base px-8 py-4 rounded-xl hover:bg-gray-100 transition-colors shadow-2xl shadow-white/10">
+      Start free trial
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     9. FOOTER
+     ═══════════════════════════════════════════════════════ -->
+<footer class="border-t border-[#1f1f1f] py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+      <!-- Wordmark -->
+      <a href="/en" class="flex items-center gap-2">
+        <span class="text-base font-bold text-white">MeuFluxo</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>
+      </a>
+
+      <!-- Nav links -->
+      <div class="flex items-center gap-6">
+        <a href="#funcionalidades" class="text-sm text-[#6b7280] hover:text-white transition-colors">Features</a>
+        <a href="#precos" class="text-sm text-[#6b7280] hover:text-white transition-colors">Pricing</a>
+        <a href="/login" class="text-sm text-[#6b7280] hover:text-white transition-colors">Sign in</a>
+      </div>
+
+      <!-- Copyright -->
+      <p class="text-xs text-[#6b7280]">
+        &copy; 2025 MeuFluxo. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════
+     Pricing Toggle Script
+     ═══════════════════════════════════════════════════════ -->
+<script>
+  function setPricing(mode) {
+    const body = document.body;
+    const btnMonthly = document.getElementById('btn-monthly');
+    const btnAnnual = document.getElementById('btn-annual');
+
+    if (mode === 'annual') {
+      body.classList.add('annual-active');
+      btnAnnual.classList.add('active');
+      btnAnnual.classList.remove('text-[#6b7280]');
+      btnMonthly.classList.remove('active');
+      btnMonthly.classList.add('text-[#6b7280]');
+    } else {
+      body.classList.remove('annual-active');
+      btnMonthly.classList.add('active');
+      btnMonthly.classList.remove('text-[#6b7280]');
+      btnAnnual.classList.remove('active');
+      btnAnnual.classList.add('text-[#6b7280]');
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -199,14 +199,16 @@ dash.post('/sites/:siteId/deletar', async (c) => {
 
 dash.get('/conversoes', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const html = render('conversions/list.html', {
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
 dash.get('/conversoes/registrar', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const siteId = c.req.query('site') || '';
   const { data: rawSites } = await supabase.from('sites').select('id, name').eq('user_id', user.userId);
   const userSites = (rawSites || []).map((s) => ({ id: s.id, name: s.name }));
@@ -216,15 +218,16 @@ dash.get('/conversoes/registrar', async (c) => {
     sitesJSON: JSON.stringify(userSites),
     preselectedSite: siteId,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
 dash.get('/docs', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const html = render('docs.html', {
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-  });
+  }, locale);
   return c.html(html);
 });
 
@@ -310,11 +313,12 @@ dash.post('/google/disconnect', async (c) => {
 
 dash.get('/settings', async (c) => {
   const user = c.get('user');
+  const locale = detectLocale(c);
   const { data: fullUser } = await supabase.from('users').select('logo_url').eq('id', user.userId).maybeSingle();
   const html = render('settings.html', {
     subscriptionBanner: await getSubscriptionBanner(user.userId),
     logoUrl: fullUser?.logo_url || '',
-  });
+  }, locale);
   return c.html(html);
 });
 
