@@ -25,13 +25,14 @@
       <span class="font-bold text-gray-900 text-sm">MeuFluxo</span>
     </div>
     <div class="flex items-center gap-4">
-      <a href="/dashboard" class="text-sm font-medium text-gray-900">Início</a>
-      <a href="/dashboard/sites" class="text-sm text-gray-600 hover:text-gray-900">Sites</a>
-      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">Assinatura</a>
-      <a href="/dashboard/docs" class="text-sm text-gray-600 hover:text-gray-900">Docs</a>
-      <a href="/dashboard/conversoes/registrar" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">+ Registrar Venda</a>
-      <a href="/dashboard/settings" class="text-sm text-gray-600 hover:text-gray-900">Config</a>
-      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">Sair</a>
+      <a href="/dashboard" class="text-sm font-medium text-gray-900">{{t_navHome}}</a>
+      <a href="/dashboard/sites" class="text-sm text-gray-600 hover:text-gray-900">{{t_navSites}}</a>
+      <a href="/billing" class="text-sm text-gray-600 hover:text-gray-900">{{t_navSubscription}}</a>
+      <a href="/dashboard/docs" class="text-sm text-gray-600 hover:text-gray-900">{{t_navDocs}}</a>
+      <a href="/dashboard/conversoes/registrar" class="bg-wa hover:bg-wa-dark text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">{{t_navRegisterSale}}</a>
+      <a href="/dashboard/settings" class="text-sm text-gray-600 hover:text-gray-900">{{t_navSettings}}</a>
+      <a href="/logout" class="text-sm text-gray-400 hover:text-gray-600">{{t_navLogout}}</a>
+      <button onclick="setLocale('{{localToggleTarget}}')" class="text-xs text-gray-400 hover:text-gray-600 font-medium px-1.5 py-0.5 rounded border border-gray-200 hover:border-gray-300 transition-colors" title="Change language">{{t_langToggle}}</button>
       <button onclick="toggleTheme()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded" title="Alternar tema">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
       </button>
@@ -40,39 +41,39 @@
   {{subscriptionBanner}}
   <main class="max-w-6xl mx-auto px-4 py-6" x-data="dashboard()" x-init="init()">
     <div class="mb-6">
-      <h1 class="text-xl font-bold text-gray-900">Olá, {{userName}} 👋</h1>
-      <p class="text-gray-500 text-sm">Aqui está um resumo da sua atividade.</p>
+      <h1 class="text-xl font-bold text-gray-900">{{t_hello}}, {{userName}} 👋</h1>
+      <p class="text-gray-500 text-sm">{{t_activitySummary}}</p>
     </div>
 
     <!-- Onboarding (oculto quando concluído ou carregando) -->
     <template x-if="!carregando && !onboarding.concluido">
       <div class="bg-white rounded-xl border border-gray-100 p-5 mb-6">
-        <h2 class="text-sm font-semibold text-gray-900 mb-1">Primeiros passos</h2>
-        <p class="text-xs text-gray-500 mb-4">Complete a configuração para começar a rastrear conversões.</p>
+        <h2 class="text-sm font-semibold text-gray-900 mb-1">{{t_firstSteps}}</h2>
+        <p class="text-xs text-gray-500 mb-4">{{t_firstStepsDesc}}</p>
         <div class="space-y-3">
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                  :class="onboarding.temSite ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
               <span x-show="onboarding.temSite">✓</span><span x-show="!onboarding.temSite">1</span>
             </div>
-            <span class="text-sm flex-1" :class="onboarding.temSite ? 'text-gray-400 line-through' : 'text-gray-800'">Criar seu primeiro site</span>
-            <a x-show="!onboarding.temSite" href="/dashboard/sites/novo" class="text-xs text-wa font-medium shrink-0">Criar →</a>
+            <span class="text-sm flex-1" :class="onboarding.temSite ? 'text-gray-400 line-through' : 'text-gray-800'">{{t_step1}}</span>
+            <a x-show="!onboarding.temSite" href="/dashboard/sites/novo" class="text-xs text-wa font-medium shrink-0">{{t_actionCreate}}</a>
           </div>
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                  :class="onboarding.temClique ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
               <span x-show="onboarding.temClique">✓</span><span x-show="!onboarding.temClique">2</span>
             </div>
-            <span class="text-sm flex-1" :class="onboarding.temClique ? 'text-gray-400 line-through' : 'text-gray-800'">Instalar o snippet e receber o primeiro clique</span>
-            <a x-show="!onboarding.temClique && onboarding.temSite" href="/dashboard/sites" class="text-xs text-wa font-medium shrink-0">Ver sites →</a>
+            <span class="text-sm flex-1" :class="onboarding.temClique ? 'text-gray-400 line-through' : 'text-gray-800'">{{t_step2}}</span>
+            <a x-show="!onboarding.temClique && onboarding.temSite" href="/dashboard/sites" class="text-xs text-wa font-medium shrink-0">{{t_actionViewSites}}</a>
           </div>
           <div class="flex items-center gap-3">
             <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                  :class="onboarding.temConversao ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
               <span x-show="onboarding.temConversao">✓</span><span x-show="!onboarding.temConversao">3</span>
             </div>
-            <span class="text-sm flex-1" :class="onboarding.temConversao ? 'text-gray-400 line-through' : 'text-gray-800'">Registrar a primeira venda</span>
-            <a x-show="!onboarding.temConversao && onboarding.temClique" href="/dashboard/conversoes/registrar" class="text-xs text-wa font-medium shrink-0">Registrar →</a>
+            <span class="text-sm flex-1" :class="onboarding.temConversao ? 'text-gray-400 line-through' : 'text-gray-800'">{{t_step3}}</span>
+            <a x-show="!onboarding.temConversao && onboarding.temClique" href="/dashboard/conversoes/registrar" class="text-xs text-wa font-medium shrink-0">{{t_actionRegister}}</a>
           </div>
         </div>
       </div>
@@ -81,27 +82,27 @@
     <!-- Cards de métricas -->
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <div class="bg-white rounded-xl border border-gray-100 p-4">
-        <p class="text-xs text-gray-500 mb-1">Cliques hoje</p>
+        <p class="text-xs text-gray-500 mb-1">{{t_clicksToday}}</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesHoje ?? '—'"></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4">
-        <p class="text-xs text-gray-500 mb-1">Cliques (7 dias)</p>
+        <p class="text-xs text-gray-500 mb-1">{{t_clicks7d}}</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesSemana ?? '—'"></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4">
-        <p class="text-xs text-gray-500 mb-1">Cliques (mês)</p>
+        <p class="text-xs text-gray-500 mb-1">{{t_clicksMonth}}</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.cliquesMes ?? '—'"></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4">
-        <p class="text-xs text-gray-500 mb-1">Conversões</p>
+        <p class="text-xs text-gray-500 mb-1">{{t_conversions}}</p>
         <p class="text-2xl font-bold text-wa" x-text="stats.totalConversoes ?? '—'"></p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4">
-        <p class="text-xs text-gray-500 mb-1">Taxa de conversão</p>
+        <p class="text-xs text-gray-500 mb-1">{{t_conversionRate}}</p>
         <p class="text-2xl font-bold text-gray-900" x-text="stats.taxaConversao != null ? stats.taxaConversao + '%' : '—'"></p>
       </div>
       <div class="bg-white rounded-xl border border-amber-100 p-4" title="Leads que clicaram mas não converteram — evento CAPI de retargeting disparado automaticamente">
-        <p class="text-xs text-amber-600 mb-1">Retargeting auto (mês)</p>
+        <p class="text-xs text-amber-600 mb-1">{{t_retargetingMonth}}</p>
         <p class="text-2xl font-bold text-amber-600" x-text="stats.leadsPeridos ?? '—'"></p>
       </div>
     </div>
@@ -138,16 +139,16 @@
          class="bg-wa hover:bg-wa-dark text-white rounded-xl p-5 flex items-center gap-4 transition-colors">
         <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-xl">💰</div>
         <div>
-          <p class="font-semibold">Registrar Venda</p>
-          <p class="text-sm text-white/80">Feche o ciclo de atribuição do Facebook</p>
+          <p class="font-semibold">{{t_registerSale}}</p>
+          <p class="text-sm text-white/80">{{t_registerSaleDesc}}</p>
         </div>
       </a>
       <a href="/dashboard/sites/novo"
          class="bg-white border border-gray-200 hover:border-gray-300 rounded-xl p-5 flex items-center gap-4 transition-colors">
         <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xl">➕</div>
         <div>
-          <p class="font-semibold text-gray-900">Novo Site</p>
-          <p class="text-sm text-gray-500">Adicione um site para rastrear</p>
+          <p class="font-semibold text-gray-900">{{t_newSite}}</p>
+          <p class="text-sm text-gray-500">{{t_newSiteDesc}}</p>
         </div>
       </a>
     </div>
@@ -197,6 +198,11 @@
           this.sitesLabel = sl === -1 ? d.siteCount + ' sites' : d.siteCount + ' / ' + sl + ' sites';
         },
       };
+    }
+
+    function setLocale(locale) {
+      document.cookie = 'locale=' + locale + ';path=/;max-age=31536000';
+      location.reload();
     }
   </script>
 </body>
