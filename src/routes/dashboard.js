@@ -45,7 +45,14 @@ dash.get('/sites', async (c) => {
   const { data: rawSites } = await supabase.from('sites').select('*')
     .eq('user_id', user.userId).order('created_at', { ascending: false });
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart - 24 * 60 * 60 * 1000).toISOString();
+  const yesterdayEnd = todayStart.toISOString();
 
   const siteCards = await Promise.all((rawSites || []).map(async (s) => {
     const site = mapSite(s);
@@ -59,12 +66,36 @@ dash.get('/sites', async (c) => {
     return { ...site, cliques30d: cliques30d || 0, totalConversoes: totalConversoes || 0 };
   }));
 
+  const siteIds = siteCards.map(s => s.id);
+  let summaryClicksYesterday = 0, summaryClicks7d = 0, summaryConversionsYesterday = 0, summaryConversions7d = 0;
+
+  if (siteIds.length > 0) {
+    const [cy, c7, vy, v7] = await Promise.all([
+      supabase.from('events').select('*', { count: 'exact', head: true })
+        .in('site_id', siteIds).gte('created_at', yesterdayStart).lt('created_at', yesterdayEnd),
+      supabase.from('events').select('*', { count: 'exact', head: true })
+        .in('site_id', siteIds).gte('created_at', sevenDaysAgo),
+      supabase.from('conversions').select('*', { count: 'exact', head: true })
+        .in('site_id', siteIds).gte('created_at', yesterdayStart).lt('created_at', yesterdayEnd),
+      supabase.from('conversions').select('*', { count: 'exact', head: true })
+        .in('site_id', siteIds).gte('created_at', sevenDaysAgo),
+    ]);
+    summaryClicksYesterday = cy.count || 0;
+    summaryClicks7d = c7.count || 0;
+    summaryConversionsYesterday = vy.count || 0;
+    summaryConversions7d = v7.count || 0;
+  }
+
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
   const html = render('sites/list.html', {
     userName: user.name,
     sitesJSON: JSON.stringify(siteCards),
     baseUrl,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
+    summaryClicksYesterday,
+    summaryClicks7d,
+    summaryConversionsYesterday,
+    summaryConversions7d,
   }, locale);
   return c.html(html);
 });

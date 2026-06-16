@@ -15,6 +15,7 @@ import billingRoutes, { webhookHandler, stripeWebhookHandler } from './routes/bi
 import clientRoutes from './routes/client.js';
 import { sendWeeklyReports } from './services/weeklyReport.js';
 import { processLostLeads } from './services/lostLeads.js';
+import { processDataRetention } from './services/dataRetention.js';
 
 const app = new Hono();
 
@@ -97,3 +98,4 @@ serve({ fetch: app.fetch, port });
 // Relatório semanal — toda segunda-feira às 8h (horário de Brasília = 11h UTC)
 cron.schedule('0 11 * * 1', sendWeeklyReports);
 cron.schedule('0 */2 * * *', processLostLeads);
+cron.schedule('0 3 * * *', processDataRetention);

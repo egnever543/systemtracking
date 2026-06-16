@@ -80,6 +80,11 @@ const translations = {
     sitesViewDetails: 'Ver detalhes',
     sitesDelete: 'Excluir',
     sitesSnippetCopied: 'Snippet copiado!',
+    sitesSummaryTitle: 'Resumo geral',
+    sitesYesterday: 'Ontem',
+    sitesLast7d: 'Últimos 7 dias',
+    sitesClicksLabel: 'Cliques',
+    sitesConversionsLabel: 'Conversões',
   },
   en: {
     siteSubtitle: 'Lead routing & WhatsApp conversion tracking',
@@ -162,6 +167,11 @@ const translations = {
     sitesViewDetails: 'View details',
     sitesDelete: 'Delete',
     sitesSnippetCopied: 'Snippet copied!',
+    sitesSummaryTitle: 'General summary',
+    sitesYesterday: 'Yesterday',
+    sitesLast7d: 'Last 7 days',
+    sitesClicksLabel: 'Clicks',
+    sitesConversionsLabel: 'Conversions',
   },
 };
 
