@@ -1,4 +1,4 @@
-import { supabase } from '../db/supabase.js';
+import { supabase } from '../db/index.js';
 import { getPlan } from '../config/plans.js';
 
 export async function processDataRetention() {
