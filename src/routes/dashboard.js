@@ -48,7 +48,6 @@ dash.get('/sites', async (c) => {
   const now = new Date();
   const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
   const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const yesterdayStart = new Date(todayStart - 24 * 60 * 60 * 1000).toISOString();
@@ -56,35 +55,24 @@ dash.get('/sites', async (c) => {
 
   const siteCards = await Promise.all((rawSites || []).map(async (s) => {
     const site = mapSite(s);
-    const { count: cliques30d } = await supabase.from('events')
-      .select('*', { count: 'exact', head: true })
-      .eq('site_id', site.id)
-      .gte('created_at', thirtyDaysAgo);
-    const { count: totalConversoes } = await supabase.from('conversions')
-      .select('*', { count: 'exact', head: true })
-      .eq('site_id', site.id);
-    return { ...site, cliques30d: cliques30d || 0, totalConversoes: totalConversoes || 0 };
-  }));
-
-  const siteIds = siteCards.map(s => s.id);
-  let summaryClicksYesterday = 0, summaryClicks7d = 0, summaryConversionsYesterday = 0, summaryConversions7d = 0;
-
-  if (siteIds.length > 0) {
-    const [cy, c7, vy, v7] = await Promise.all([
+    const [r30d, r7d, rYest, rConv] = await Promise.all([
       supabase.from('events').select('*', { count: 'exact', head: true })
-        .in('site_id', siteIds).gte('created_at', yesterdayStart).lt('created_at', yesterdayEnd),
+        .eq('site_id', site.id).gte('created_at', thirtyDaysAgo),
       supabase.from('events').select('*', { count: 'exact', head: true })
-        .in('site_id', siteIds).gte('created_at', sevenDaysAgo),
+        .eq('site_id', site.id).gte('created_at', sevenDaysAgo),
+      supabase.from('events').select('*', { count: 'exact', head: true })
+        .eq('site_id', site.id).gte('created_at', yesterdayStart).lt('created_at', yesterdayEnd),
       supabase.from('conversions').select('*', { count: 'exact', head: true })
-        .in('site_id', siteIds).gte('created_at', yesterdayStart).lt('created_at', yesterdayEnd),
-      supabase.from('conversions').select('*', { count: 'exact', head: true })
-        .in('site_id', siteIds).gte('created_at', sevenDaysAgo),
+        .eq('site_id', site.id),
     ]);
-    summaryClicksYesterday = cy.count || 0;
-    summaryClicks7d = c7.count || 0;
-    summaryConversionsYesterday = vy.count || 0;
-    summaryConversions7d = v7.count || 0;
-  }
+    return {
+      ...site,
+      cliques30d: r30d.count || 0,
+      cliques7d: r7d.count || 0,
+      cliquesOntem: rYest.count || 0,
+      totalConversoes: rConv.count || 0,
+    };
+  }));
 
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
   const html = render('sites/list.html', {
@@ -92,10 +80,6 @@ dash.get('/sites', async (c) => {
     sitesJSON: JSON.stringify(siteCards),
     baseUrl,
     subscriptionBanner: await getSubscriptionBanner(user.userId),
-    summaryClicksYesterday,
-    summaryClicks7d,
-    summaryConversionsYesterday,
-    summaryConversions7d,
   }, locale);
   return c.html(html);
 });
