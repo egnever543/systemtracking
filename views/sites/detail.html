@@ -488,14 +488,39 @@
                       <span x-show="n.destinationType === 'url'" class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">URL</span>
                       <span x-show="n.destinationType === 'telegram'" class="text-xs bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded font-medium">Telegram</span>
                     </td>
-                    <td class="py-2 pr-4 text-gray-600" x-text="n.label || '—'"></td>
+                    <!-- Label: texto ou input -->
+                    <td class="py-2 pr-4">
+                      <span x-show="editandoId !== n.id" class="text-gray-600" x-text="n.label || '—'"></span>
+                      <input x-show="editandoId === n.id" x-model="editLabel"
+                        class="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-wa" />
+                    </td>
                     <td class="py-2 pr-4"><code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="n.number"></code></td>
-                    <td class="py-2 pr-4 text-gray-600" x-text="n.weight"></td>
+                    <!-- Peso: texto ou input -->
+                    <td class="py-2 pr-4">
+                      <span x-show="editandoId !== n.id" class="text-gray-600" x-text="n.weight"></span>
+                      <input x-show="editandoId === n.id" x-model="editWeight" type="number" min="1"
+                        class="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-wa" />
+                    </td>
                     <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="calcPercent(n.weight) + '%'"></span></td>
                     <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).cliques"></td>
                     <td class="py-2 pr-4 text-gray-600" x-text="getStats(n.number).conversoes"></td>
                     <td class="py-2 pr-4"><span class="text-xs font-semibold text-wa" x-text="getStats(n.number).taxa + '%'"></span></td>
-                    <td class="py-2"><button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button></td>
+                    <td class="py-2 whitespace-nowrap">
+                      <!-- modo normal -->
+                      <template x-if="editandoId !== n.id">
+                        <span class="flex gap-3">
+                          <button @click="iniciarEdicao(n)" class="text-xs text-blue-500 hover:text-blue-700 transition-colors">Editar</button>
+                          <button @click="remover(n.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Remover</button>
+                        </span>
+                      </template>
+                      <!-- modo edição -->
+                      <template x-if="editandoId === n.id">
+                        <span class="flex gap-3">
+                          <button @click="salvarEdicao(n)" class="text-xs text-green-600 hover:text-green-800 font-medium transition-colors">Salvar</button>
+                          <button @click="editandoId = null" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancelar</button>
+                        </span>
+                      </template>
+                    </td>
                   </tr>
                 </template>
               </tbody>
@@ -1142,6 +1167,9 @@
         numeros: [],
         numerosStats: [],
         novo: { label: '', number: '', weight: 50, destinationType: 'whatsapp' },
+        editandoId: null,
+        editLabel: '',
+        editWeight: 50,
         async init() {
           const [res, resStats] = await Promise.all([
             fetch(`/api/sites/${SITE_ID}/numbers`),
@@ -1176,6 +1204,24 @@
             this.numeros = this.numeros.filter(n => n.id !== id);
             const resStats = await fetch(`/api/sites/${SITE_ID}/numbers-stats`);
             if (resStats.ok) this.numerosStats = await resStats.json();
+          }
+        },
+        iniciarEdicao(n) {
+          this.editandoId = n.id;
+          this.editLabel = n.label || '';
+          this.editWeight = n.weight;
+        },
+        async salvarEdicao(n) {
+          const res = await fetch(`/api/sites/${SITE_ID}/numbers/${n.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label: this.editLabel, weight: this.editWeight }),
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            const idx = this.numeros.findIndex(x => x.id === n.id);
+            if (idx !== -1) this.numeros[idx] = { ...this.numeros[idx], label: updated.label, weight: updated.weight };
+            this.editandoId = null;
           }
         },
       };

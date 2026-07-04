@@ -514,6 +514,25 @@ api.delete('/sites/:siteId/numbers/:numberId', async (c) => {
   return c.json({ ok: true });
 });
 
+api.patch('/sites/:siteId/numbers/:numberId', async (c) => {
+  const user = c.get('user');
+  const { siteId, numberId } = c.req.param();
+
+  const { data: rawSite } = await supabase.from('sites').select('id')
+    .eq('id', siteId).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const body = await c.req.json();
+  const updates = {};
+  if (body.label !== undefined) updates.label = body.label;
+  if (body.weight !== undefined) updates.weight = parseInt(body.weight) || 1;
+
+  const { data, error } = await supabase.from('site_numbers')
+    .update(updates).eq('id', numberId).eq('site_id', siteId).select().maybeSingle();
+  if (error) return c.json({ erro: error.message }, 400);
+  return c.json(data);
+});
+
 api.get('/sites/:siteId/chart', async (c) => {
   const user = c.get('user');
   const { siteId } = c.req.param();
