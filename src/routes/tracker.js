@@ -102,8 +102,12 @@ tracker.get('/r/:siteId', async (c) => {
 
   const trackingId = generateTrackingId();
 
-  // Check plan click limit
+  // Check plan — trial users are fully blocked
   const usage = await getUserUsage(site.userId);
+  if (usage.plan?.slug === 'trial') {
+    return c.redirect('https://meufluxo.com.br', 302);
+  }
+
   const overClickLimit = usage.clickLimitReached;
 
   if (!overClickLimit) {
@@ -302,6 +306,9 @@ tracker.post('/:siteId', async (c) => {
   const { data: raw } = await supabase.from('sites').select('*').eq('id', siteId).maybeSingle();
   const site = mapSite(raw);
   if (!site) return c.json({ erro: 'Site não encontrado' }, 404);
+
+  const { plan } = await getUserUsage(site.userId);
+  if (plan?.slug === 'trial') return c.json({ erro: 'Plano inativo' }, 403);
 
   const body = await c.req.json().catch(() => ({}));
   const { fbclid, page_url, user_agent, tracking_id: clientTrackingId } = body;
