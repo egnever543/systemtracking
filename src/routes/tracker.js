@@ -105,7 +105,7 @@ tracker.get('/r/:siteId', async (c) => {
   // Check plan — trial users are fully blocked
   const usage = await getUserUsage(site.userId);
   if (usage.plan?.slug === 'trial') {
-    return c.redirect('https://meufluxo.com.br', 302);
+    return c.redirect('https://track.convertedigitais.com.br', 302);
   }
 
   const overClickLimit = usage.clickLimitReached;
