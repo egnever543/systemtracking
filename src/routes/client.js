@@ -146,6 +146,40 @@ client.get('/:token/api/utm-stats', resolveToken, async (c) => {
   );
 });
 
+client.get('/:token/api/numbers', resolveToken, async (c) => {
+  const site = c.get('site');
+  const { data: rows } = await supabase
+    .from('site_numbers')
+    .select('id, label, number, weight, destination_type')
+    .eq('site_id', site.id)
+    .order('created_at');
+  return c.json(rows || []);
+});
+
+client.patch('/:token/api/numbers/:numberId', resolveToken, async (c) => {
+  const site = c.get('site');
+  const { numberId } = c.req.param();
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ erro: 'Dados inválidos' }, 400);
+
+  const updates = {};
+  if (body.label !== undefined) updates.label = body.label;
+  if (body.weight !== undefined) updates.weight = parseInt(body.weight) || 1;
+  if (body.number !== undefined && String(body.number).trim()) updates.number = String(body.number).trim();
+
+  const { data, error } = await supabase
+    .from('site_numbers')
+    .update(updates)
+    .eq('id', numberId)
+    .eq('site_id', site.id)
+    .select()
+    .maybeSingle();
+
+  if (error) return c.json({ erro: error.message }, 400);
+  if (!data) return c.json({ erro: 'Destino não encontrado' }, 404);
+  return c.json(data);
+});
+
 client.get('/:token/api/numbers-stats', resolveToken, async (c) => {
   const site = c.get('site');
   const siteId = site.id;

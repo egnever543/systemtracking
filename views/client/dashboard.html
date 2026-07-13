@@ -49,6 +49,11 @@
         class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
         Desempenho
       </button>
+      <button @click="aba = 'destinos'; carregarDestinos()"
+        :class="aba === 'destinos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
+        Destinos
+      </button>
       <button @click="aba = 'historico'; carregarHistorico()"
         :class="aba === 'historico' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
         class="flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all">
@@ -288,6 +293,104 @@
       </div>
     </div>
 
+    <!-- ===== ABA: DESTINOS ===== -->
+    <div x-show="aba === 'destinos'">
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <h2 class="font-semibold text-gray-900 mb-1">Destinos</h2>
+        <p class="text-xs text-gray-400 mb-4">Edite o número, label ou peso de cada destino de redirecionamento.</p>
+
+        <template x-if="carregandoDestinos">
+          <div class="space-y-2">
+            <template x-for="i in [1,2,3]" :key="i">
+              <div class="h-10 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+          </div>
+        </template>
+
+        <template x-if="!carregandoDestinos && destinos.length === 0">
+          <p class="text-sm text-gray-400">Nenhum destino configurado.</p>
+        </template>
+
+        <template x-if="!carregandoDestinos && destinos.length > 0">
+          <div class="space-y-3">
+            <template x-for="d in destinos" :key="d.id">
+              <div class="border border-gray-100 rounded-xl p-4">
+                <!-- Cabeçalho do card -->
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span x-show="d.destination_type === 'whatsapp'" class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">WhatsApp</span>
+                    <span x-show="d.destination_type === 'whatsapp_group'" class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">Grupo</span>
+                    <span x-show="d.destination_type === 'url'" class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">URL</span>
+                    <span x-show="d.destination_type === 'telegram'" class="text-xs bg-sky-50 text-sky-700 px-2 py-0.5 rounded font-medium">Telegram</span>
+                    <span x-show="!d.destination_type || d.destination_type === 'whatsapp'" class="hidden"></span>
+                    <span class="text-sm font-medium text-gray-800" x-text="d.label || '(sem label)'"></span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <template x-if="editandoDestinoId !== d.id">
+                      <button @click="iniciarEdicaoDestino(d)" class="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">Editar</button>
+                    </template>
+                    <template x-if="editandoDestinoId === d.id">
+                      <div class="flex gap-2">
+                        <button @click="salvarDestino(d)" :disabled="salvandoDestino" class="text-xs text-green-600 hover:text-green-800 font-medium transition-colors disabled:opacity-50">
+                          <span x-show="!salvandoDestino">Salvar</span>
+                          <span x-show="salvandoDestino">Salvando...</span>
+                        </button>
+                        <button @click="editandoDestinoId = null" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancelar</button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Modo visualização -->
+                <template x-if="editandoDestinoId !== d.id">
+                  <div class="grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p class="text-xs text-gray-400 mb-0.5">Destino</p>
+                      <p class="text-gray-800 font-mono text-xs break-all" x-text="d.number"></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-gray-400 mb-0.5">Label</p>
+                      <p class="text-gray-700" x-text="d.label || '—'"></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-gray-400 mb-0.5">Peso</p>
+                      <p class="text-gray-700 font-semibold" x-text="d.weight"></p>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Modo edição -->
+                <template x-if="editandoDestinoId === d.id">
+                  <div class="grid grid-cols-1 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-500 mb-1">Destino (número / URL)</label>
+                      <input x-model="editDestino.number" type="text"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-wa" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
+                        <input x-model="editDestino.label" type="text" placeholder="Ex: Vendedor A"
+                          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Peso</label>
+                        <input x-model="editDestino.weight" type="number" min="1"
+                          class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wa" />
+                      </div>
+                    </div>
+                    <template x-if="erroDestino">
+                      <p class="text-xs text-red-500" x-text="erroDestino"></p>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- ===== ABA: HISTÓRICO ===== -->
     <div x-show="aba === 'historico'">
       <div class="bg-white rounded-xl border border-gray-100 p-5">
@@ -398,6 +501,15 @@
         numerosStats: [],
         carregandoDesempenho: false,
         graficoIniciado: false,
+
+        // Destinos
+        destinos: [],
+        carregandoDestinos: false,
+        destinosIniciados: false,
+        editandoDestinoId: null,
+        editDestino: { number: '', label: '', weight: 50 },
+        salvandoDestino: false,
+        erroDestino: null,
 
         // Histórico
         conversoes: [],
@@ -555,6 +667,48 @@
               },
             },
           });
+        },
+
+        async carregarDestinos() {
+          if (this.destinosIniciados) return;
+          this.carregandoDestinos = true;
+          try {
+            const res = await fetch(`${API}/numbers`);
+            if (res.ok) this.destinos = await res.json();
+          } finally {
+            this.carregandoDestinos = false;
+            this.destinosIniciados = true;
+          }
+        },
+
+        iniciarEdicaoDestino(d) {
+          this.editandoDestinoId = d.id;
+          this.editDestino = { number: d.number, label: d.label || '', weight: d.weight };
+          this.erroDestino = null;
+        },
+
+        async salvarDestino(d) {
+          this.salvandoDestino = true;
+          this.erroDestino = null;
+          try {
+            const res = await fetch(`${API}/numbers/${d.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.editDestino),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              this.erroDestino = data.erro || 'Erro ao salvar';
+            } else {
+              const idx = this.destinos.findIndex(x => x.id === d.id);
+              if (idx !== -1) this.destinos[idx] = { ...this.destinos[idx], ...data };
+              this.editandoDestinoId = null;
+            }
+          } catch {
+            this.erroDestino = 'Falha de conexão. Tente novamente.';
+          } finally {
+            this.salvandoDestino = false;
+          }
         },
 
         async carregarHistorico() {
