@@ -156,6 +156,30 @@ client.get('/:token/api/numbers', resolveToken, async (c) => {
   return c.json(rows || []);
 });
 
+client.post('/:token/api/numbers', resolveToken, async (c) => {
+  const site = c.get('site');
+  const body = await c.req.json().catch(() => null);
+  if (!body?.number) return c.json({ erro: 'Destino obrigatório' }, 400);
+
+  const destType = ['whatsapp', 'whatsapp_group', 'url', 'telegram'].includes(body.destinationType)
+    ? body.destinationType : 'whatsapp';
+  const number = destType === 'whatsapp'
+    ? String(body.number).replace(/\D/g, '')
+    : String(body.number).trim();
+
+  const { data, error } = await supabase.from('site_numbers').insert({
+    id: randomUUID(),
+    site_id: site.id,
+    number,
+    label: body.label || null,
+    weight: Math.max(1, parseInt(body.weight) || 50),
+    destination_type: destType,
+  }).select().maybeSingle();
+
+  if (error) return c.json({ erro: error.message }, 500);
+  return c.json(data);
+});
+
 client.patch('/:token/api/numbers/:numberId', resolveToken, async (c) => {
   const site = c.get('site');
   const { numberId } = c.req.param();
