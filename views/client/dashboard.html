@@ -326,7 +326,10 @@
                   </div>
                   <div class="flex items-center gap-3">
                     <template x-if="editandoDestinoId !== d.id">
-                      <button @click="iniciarEdicaoDestino(d)" class="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">Editar</button>
+                      <div class="flex gap-3">
+                        <button @click="iniciarEdicaoDestino(d)" class="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">Editar</button>
+                        <button @click="excluirDestino(d)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Excluir</button>
+                      </div>
                     </template>
                     <template x-if="editandoDestinoId === d.id">
                       <div class="flex gap-2">
@@ -743,6 +746,13 @@
           this.editandoDestinoId = d.id;
           this.editDestino = { number: d.number, label: d.label || '', weight: d.weight };
           this.erroDestino = null;
+        },
+
+        async excluirDestino(d) {
+          const label = d.label || d.number;
+          if (!confirm(`Excluir "${label}"?\n\nEsta ação é permanente.`)) return;
+          const res = await fetch(`${API}/numbers/${d.id}`, { method: 'DELETE' });
+          if (res.ok) this.destinos = this.destinos.filter(x => x.id !== d.id);
         },
 
         async adicionarDestino() {

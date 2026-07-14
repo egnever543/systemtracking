@@ -204,6 +204,13 @@ client.patch('/:token/api/numbers/:numberId', resolveToken, async (c) => {
   return c.json(data);
 });
 
+client.delete('/:token/api/numbers/:numberId', resolveToken, async (c) => {
+  const site = c.get('site');
+  const { numberId } = c.req.param();
+  await supabase.from('site_numbers').delete().eq('id', numberId).eq('site_id', site.id);
+  return c.json({ ok: true });
+});
+
 client.get('/:token/api/numbers-stats', resolveToken, async (c) => {
   const site = c.get('site');
   const siteId = site.id;
