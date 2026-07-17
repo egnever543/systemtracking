@@ -450,7 +450,22 @@
 
     <!-- ===== ABA: HISTÓRICO ===== -->
     <div x-show="aba === 'historico'">
-      <div class="bg-white rounded-xl border border-gray-100 p-5">
+      <!-- Sub-toggle -->
+      <div class="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+        <button @click="subAbaHistorico = 'conversoes'"
+          :class="subAbaHistorico === 'conversoes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+          class="flex-1 text-sm font-medium py-1.5 px-3 rounded-lg transition-all">
+          Conversões
+        </button>
+        <button @click="subAbaHistorico = 'cliques'; carregarCliques()"
+          :class="subAbaHistorico === 'cliques' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+          class="flex-1 text-sm font-medium py-1.5 px-3 rounded-lg transition-all">
+          Cliques
+        </button>
+      </div>
+
+      <!-- Conversões -->
+      <div x-show="subAbaHistorico === 'conversoes'" class="bg-white rounded-xl border border-gray-100 p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-gray-900">Conversões Registradas</h2>
           <span class="text-xs text-gray-400" x-text="totalConversoes + ' registros'"></span>
@@ -520,6 +535,82 @@
           </div>
         </template>
       </div>
+
+      <!-- Cliques -->
+      <div x-show="subAbaHistorico === 'cliques'" class="bg-white rounded-xl border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-900">Histórico de Cliques</h2>
+          <span class="text-xs text-gray-400" x-text="totalCliquesHist + ' registros'"></span>
+        </div>
+
+        <template x-if="carregandoCliques">
+          <div class="space-y-2">
+            <template x-for="i in [1,2,3,4,5]" :key="i">
+              <div class="h-8 bg-gray-100 rounded animate-pulse"></div>
+            </template>
+          </div>
+        </template>
+
+        <template x-if="!carregandoCliques && cliques.length === 0">
+          <p class="text-sm text-gray-400">Nenhum clique registrado ainda.</p>
+        </template>
+
+        <template x-if="!carregandoCliques && cliques.length > 0">
+          <div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-gray-100">
+                    <th class="text-left pb-2 font-medium">Código</th>
+                    <th class="text-left pb-2 font-medium">Data</th>
+                    <th class="text-left pb-2 font-medium hidden sm:table-cell">Origem</th>
+                    <th class="text-left pb-2 font-medium hidden sm:table-cell">Atendente</th>
+                    <th class="text-left pb-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="cl in cliques" :key="cl.id">
+                    <tr class="border-b border-gray-50">
+                      <td class="py-2 pr-4">
+                        <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="cl.trackingId || '—'"></code>
+                      </td>
+                      <td class="py-2 pr-4 text-gray-600 whitespace-nowrap text-xs" x-text="formatDate(cl.createdAt)"></td>
+                      <td class="py-2 pr-4 text-xs text-gray-600 hidden sm:table-cell" x-text="cl.source"></td>
+                      <td class="py-2 pr-4 hidden sm:table-cell">
+                        <span x-show="cl.selectedNumber" class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono" x-text="cl.selectedNumber"></span>
+                        <span x-show="!cl.selectedNumber" class="text-xs text-gray-400">—</span>
+                      </td>
+                      <td class="py-2">
+                        <span x-show="cl.convertido" class="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">Convertido</span>
+                        <span x-show="!cl.convertido" class="text-xs text-gray-400">Pendente</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <template x-if="totalPaginasCliques > 1">
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span class="text-xs text-gray-400"
+                  x-text="`${(paginaCliques-1)*porPaginaCliques+1}–${Math.min(paginaCliques*porPaginaCliques, totalCliquesHist)} de ${totalCliquesHist}`">
+                </span>
+                <div class="flex items-center gap-1">
+                  <button @click="irPaginaCliques(paginaCliques - 1)" :disabled="paginaCliques === 1"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    ← Anterior
+                  </button>
+                  <span class="px-3 py-1.5 text-xs text-gray-500" x-text="`${paginaCliques} / ${totalPaginasCliques}`"></span>
+                  <button @click="irPaginaCliques(paginaCliques + 1)" :disabled="paginaCliques >= totalPaginasCliques"
+                    class="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Próxima →
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
     </div>
 
   </main>
@@ -573,12 +664,20 @@
         erroNovoDestino: null,
 
         // Histórico
+        subAbaHistorico: 'conversoes',
         conversoes: [],
         totalConversoes: 0,
         paginaHistorico: 1,
         porPaginaHistorico: 25,
         carregandoHistorico: false,
         historicoIniciado: false,
+        // Cliques
+        cliques: [],
+        totalCliquesHist: 0,
+        paginaCliques: 1,
+        porPaginaCliques: 25,
+        carregandoCliques: false,
+        cliquesIniciados: false,
 
         get eventoAtual() {
           return TIPOS_EVENTO.find(e => e.value === this.eventoSelecionado) || null;
@@ -817,6 +916,34 @@
           } finally {
             this.carregandoHistorico = false;
           }
+        },
+
+        get totalPaginasCliques() {
+          return Math.max(1, Math.ceil(this.totalCliquesHist / this.porPaginaCliques));
+        },
+
+        async carregarCliques() {
+          if (this.cliquesIniciados) return;
+          this.carregandoCliques = true;
+          try {
+            const offset = (this.paginaCliques - 1) * this.porPaginaCliques;
+            const res = await fetch(`${API}/events?limit=${this.porPaginaCliques}&offset=${offset}`);
+            if (res.ok) {
+              const data = await res.json();
+              this.cliques = data.items;
+              this.totalCliquesHist = data.total;
+            }
+          } finally {
+            this.carregandoCliques = false;
+            this.cliquesIniciados = true;
+          }
+        },
+
+        async irPaginaCliques(n) {
+          if (n < 1 || n > this.totalPaginasCliques) return;
+          this.paginaCliques = n;
+          this.cliquesIniciados = false;
+          await this.carregarCliques();
         },
 
         async irPaginaHistorico(n) {

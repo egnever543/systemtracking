@@ -276,6 +276,40 @@ client.get('/:token/api/conversions', resolveToken, async (c) => {
   });
 });
 
+client.get('/:token/api/events', resolveToken, async (c) => {
+  const site = c.get('site');
+  const limit = Math.min(50, Math.max(5, parseInt(c.req.query('limit') || '25')));
+  const offset = Math.max(0, parseInt(c.req.query('offset') || '0'));
+
+  const [{ count: total }, { data: rows }] = await Promise.all([
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('site_id', site.id),
+    supabase.from('events')
+      .select('id, tracking_id, selected_number, fbclid, click_params, created_at')
+      .eq('site_id', site.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1),
+  ]);
+
+  const eventIds = (rows || []).map(r => r.id);
+  let convertedSet = new Set();
+  if (eventIds.length > 0) {
+    const { data: convs } = await supabase.from('conversions').select('event_id').in('event_id', eventIds);
+    convertedSet = new Set((convs || []).map(c => c.event_id));
+  }
+
+  return c.json({
+    items: (rows || []).map(r => ({
+      id: r.id,
+      trackingId: r.tracking_id,
+      selectedNumber: r.selected_number,
+      source: r.click_params?.utm_source || (r.fbclid ? 'Facebook' : r.click_params?.gclid ? 'Google' : 'Direto'),
+      createdAt: r.created_at,
+      convertido: convertedSet.has(r.id),
+    })),
+    total: total || 0,
+  });
+});
+
 client.get('/:token/api/lookup/:trackingId', resolveToken, async (c) => {
   const site = c.get('site');
   const { trackingId } = c.req.param();
