@@ -200,14 +200,32 @@
                             <p class="text-xs text-gray-700 break-all" x-text="c.pageUrl"></p>
                           </div>
 
-                          <template x-if="c.fbSentAt">
-                            <div>
-                              <p class="text-xs text-gray-400 mb-1">Enviado à Meta em</p>
-                              <p class="text-xs font-mono text-gray-700" x-text="toUnix(c.fbSentAt)"></p>
-                              <p class="text-xs text-gray-500 mt-0.5" x-text="formatDateFull(c.fbSentAt)"></p>
-                            </div>
-                          </template>
+                          <div>
+                            <p class="text-xs text-gray-400 mb-1">Enviado à Meta</p>
+                            <template x-if="c.fbSentAt">
+                              <div>
+                                <p class="text-xs font-mono text-gray-700" x-text="toUnix(c.fbSentAt)"></p>
+                                <p class="text-xs text-gray-500 mt-0.5" x-text="formatDateFull(c.fbSentAt)"></p>
+                              </div>
+                            </template>
+                            <template x-if="!c.fbSentAt">
+                              <p class="text-xs text-gray-400">Não enviado</p>
+                            </template>
+                          </div>
 
+                        </div>
+
+                        <!-- Ação de reenvio -->
+                        <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
+                          <button @click.stop="reenviar(c)"
+                            :disabled="c._reenviando"
+                            class="text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <span x-show="!c._reenviando">↺ Reenviar para Meta CAPI</span>
+                            <span x-show="c._reenviando">Reenviando...</span>
+                          </button>
+                          <template x-if="c._reenvioMsg">
+                            <span class="text-xs" :class="c._reenvioOk ? 'text-green-600' : 'text-red-500'" x-text="c._reenvioMsg"></span>
+                          </template>
                         </div>
                       </div>
 
@@ -283,6 +301,28 @@
             this.totalValor = this.conversoes.reduce((s, c) => s + (c.value || 0), 0);
           }
           this.carregando = false;
+        },
+
+        async reenviar(c) {
+          c._reenviando = true;
+          c._reenvioMsg = null;
+          try {
+            const res = await fetch(`/api/conversions/${c.id}/resend`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok && data.sucesso) {
+              c._reenvioOk = true;
+              c._reenvioMsg = 'Reenviado com sucesso!';
+              c.fbSentAt = data.fbSentAt;
+            } else {
+              c._reenvioOk = false;
+              c._reenvioMsg = data.erro || 'Erro ao reenviar';
+            }
+          } catch {
+            c._reenvioOk = false;
+            c._reenvioMsg = 'Falha de conexão';
+          } finally {
+            c._reenviando = false;
+          }
         },
 
         async irPagina(n) {

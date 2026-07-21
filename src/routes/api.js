@@ -92,6 +92,55 @@ api.get('/conversions', async (c) => {
   });
 });
 
+api.post('/conversions/:convId/resend', async (c) => {
+  const user = c.get('user');
+  const { convId } = c.req.param();
+
+  const { data: conv } = await supabase.from('conversions')
+    .select('*')
+    .eq('id', convId)
+    .maybeSingle();
+  if (!conv) return c.json({ erro: 'Conversão não encontrada' }, 404);
+
+  // Verifica que pertence ao usuário
+  const { data: rawSite } = await supabase.from('sites').select('*')
+    .eq('id', conv.site_id).eq('user_id', user.userId).maybeSingle();
+  if (!rawSite) return c.json({ erro: 'Acesso negado' }, 403);
+  const site = mapSite(rawSite);
+
+  const { data: rawEvent } = await supabase.from('events').select('*')
+    .eq('id', conv.event_id).maybeSingle();
+  if (!rawEvent) return c.json({ erro: 'Evento de clique não encontrado' }, 404);
+  const event = mapEvent(rawEvent);
+
+  if (!event.fbclid) return c.json({ erro: 'Clique sem fbclid — reenvio para Meta não aplicável' }, 422);
+  if (!site.fbPixelId || !site.fbAccessToken) return c.json({ erro: 'Site sem Pixel ID ou Token configurados' }, 422);
+
+  const result = await sendConversionEvent({
+    pixelId: site.fbPixelId,
+    accessToken: site.fbAccessToken,
+    testEventCode: site.fbTestEventCode || null,
+    trackingId: event.trackingId,
+    pageUrl: event.pageUrl,
+    fbclid: event.fbclid,
+    eventCreatedAt: event.createdAt,
+    ipOriginal: event.ipOriginal,
+    userAgent: event.userAgent,
+    eventName: 'Purchase',
+    value: conv.value || 0,
+    currency: conv.currency || 'BRL',
+  });
+
+  const now = new Date().toISOString();
+  await supabase.from('conversions').update({
+    fb_response: JSON.stringify(result.response),
+    fb_sent_at: now,
+  }).eq('id', convId);
+
+  if (!result.success) return c.json({ erro: result.error, detalhe: result.response }, 207);
+  return c.json({ sucesso: true, fbSentAt: now });
+});
+
 api.get('/events/lookup/:trackingId', async (c) => {
   const { trackingId } = c.req.param();
   const id = trackingId.toUpperCase().trim();
