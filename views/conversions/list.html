@@ -295,7 +295,7 @@
           const res = await fetch(`/api/conversions?${params}`);
           if (res.ok) {
             const data = await res.json();
-            this.conversoes = (data.items || []).map(c => ({ ...c, _aberto: false }));
+            this.conversoes = (data.items || []).map(c => ({ ...c, _aberto: false, _reenviando: false, _reenvioMsg: null, _reenvioOk: false }));
             this.total = data.total || 0;
             this.sites = data.sites || [];
             this.totalValor = this.conversoes.reduce((s, c) => s + (c.value || 0), 0);
